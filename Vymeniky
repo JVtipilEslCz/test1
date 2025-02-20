@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evidenční systém půjčovny</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: Calibri, sans-serif; }
+    </style>
+</head>
+<body>
+    <h1>Evidenční systém půjčovny</h1>
+    
+    <h2>Přidat nové zařízení</h2>
+    <input type="text" id="deviceName" placeholder="Název zařízení">
+    <button onclick="addDevice()">Přidat</button>
+    
+    <h2>Seznam zařízení</h2>
+    <ul id="deviceList"></ul>
+    
+    <h2>Skenovat QR kód</h2>
+    <video id="video" width="300" height="200" autoplay></video>
+    <button onclick="startScanner()">Spustit skener</button>
+    
+    <script>
+        let devices = JSON.parse(localStorage.getItem("devices")) || [];
+
+        function addDevice() {
+            let name = document.getElementById("deviceName").value;
+            if (!name) return;
+            let id = "DEV" + Math.floor(Math.random() * 10000);
+            devices.push({ id, name, status: "Dostupné", loanedBy: "", loanedTo: "", loanDate: "" });
+            localStorage.setItem("devices", JSON.stringify(devices));
+            renderDevices();
+        }
+
+        function renderDevices() {
+            let list = document.getElementById("deviceList");
+            list.innerHTML = "";
+            devices.forEach(device => {
+                let li = document.createElement("li");
+                li.innerHTML = `${device.name} (${device.id}) - ${device.status}` +
+                    ` <br>Kdo půjčil: ${device.loanedBy || "-"}` +
+                    ` <br>Komu půjčil: ${device.loanedTo || "-"}` +
+                    ` <br>Datum zápůjčky: ${device.loanDate || "-"}` +
+                    ` <br><button onclick="loanDevice('${device.id}')">Půjčit</button>` +
+                    ` <button onclick="returnDevice('${device.id}')">Vrátit</button>` +
+                    ` <div id="qrcode-${device.id}"></div>`;
+                list.appendChild(li);
+                new QRCode(document.getElementById(`qrcode-${device.id}`), device.id);
+            });
+        }
+
+        function loanDevice(id) {
+            let device = devices.find(d => d.id === id);
+            if (device) {
+                let loanedBy = prompt("Kdo půjčil?");
+                let loanedTo = prompt("Komu půjčil?");
+                let loanDate = new Date().toLocaleDateString("cs-CZ");
+                if (loanedBy && loanedTo) {
+                    device.status = "Půjčeno";
+                    device.loanedBy = loanedBy;
+                    device.loanedTo = loanedTo;
+                    device.loanDate = loanDate;
+                    localStorage.setItem("devices", JSON.stringify(devices));
+                    renderDevices();
+                }
+            }
+        }
+
+        function returnDevice(id) {
+            let device = devices.find(d => d.id === id);
+            if (device) {
+                device.status = "Dostupné";
+                device.loanedBy = "";
+                device.loanedTo = "";
+                device.loanDate = "";
+                localStorage.setItem("devices", JSON.stringify(devices));
+                renderDevices();
+            }
+        }
+
+        function startScanner() {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
+                let video = document.getElementById("video");
+                video.srcObject = stream;
+                let canvas = document.createElement("canvas");
+                let ctx = canvas.getContext("2d");
+                
+                function scan() {
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        let code = jsQR(imageData.data, canvas.width, canvas.height);
+                        if (code) {
+                            alert("Naskenováno: " + code.data);
+                            let device = devices.find(d => d.id === code.data);
+                            if (device) {
+                                device.status = device.status === "Dostupné" ? "Půjčeno" : "Dostupné";
+                                localStorage.setItem("devices", JSON.stringify(devices));
+                                renderDevices();
+                            }
+                        }
+                    }
+                    requestAnimationFrame(scan);
+                }
+                scan();
+            });
+        }
+        
+        renderDevices();
+    </script>
+</body>
+</html>
