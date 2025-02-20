@@ -13,6 +13,10 @@
 <body>
     <h1>Evidenční systém půjčovny</h1>
     
+    <button onclick="startScanner()">Spustit skener</button>
+    <video id="video" width="300" height="200" autoplay></video>
+    <p id="scannerStatus"></p>
+    
     <h2>Přidat nové zařízení</h2>
     <input type="text" id="deviceName" placeholder="Název zařízení">
     <button onclick="addDevice()">Přidat</button>
@@ -20,12 +24,11 @@
     <h2>Seznam zařízení</h2>
     <ul id="deviceList"></ul>
     
-    <h2>Skenovat QR kód</h2>
-    <video id="video" width="300" height="200" autoplay></video>
-    <button onclick="startScanner()">Spustit skener</button>
-    
     <script>
         let devices = JSON.parse(localStorage.getItem("devices")) || [];
+        let filteredDevices = [...devices];
+        let scanning = false;
+        let videoStream = null;
 
         function addDevice() {
             let name = document.getElementById("deviceName").value;
@@ -39,7 +42,7 @@
         function renderDevices() {
             let list = document.getElementById("deviceList");
             list.innerHTML = "";
-            devices.forEach(device => {
+            filteredDevices.forEach(device => {
                 let li = document.createElement("li");
                 li.innerHTML = `${device.name} (${device.id}) - ${device.status}` +
                     ` <br>Kdo půjčil: ${device.loanedBy || "-"}` +
@@ -83,13 +86,20 @@
         }
 
         function startScanner() {
+            if (scanning) return;
+            scanning = true;
+            document.getElementById("scannerStatus").innerText = "Spouštím skener...";
+
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
+                videoStream = stream;
                 let video = document.getElementById("video");
                 video.srcObject = stream;
                 let canvas = document.createElement("canvas");
                 let ctx = canvas.getContext("2d");
-                
+                document.getElementById("scannerStatus").innerText = "Skenování...";
+
                 function scan() {
+                    if (!scanning) return;
                     if (video.readyState === video.HAVE_ENOUGH_DATA) {
                         canvas.width = video.videoWidth;
                         canvas.height = video.videoHeight;
@@ -97,19 +107,29 @@
                         let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                         let code = jsQR(imageData.data, canvas.width, canvas.height);
                         if (code) {
-                            alert("Naskenováno: " + code.data);
                             let device = devices.find(d => d.id === code.data);
                             if (device) {
-                                device.status = device.status === "Dostupné" ? "Půjčeno" : "Dostupné";
-                                localStorage.setItem("devices", JSON.stringify(devices));
+                                filteredDevices = [device];
                                 renderDevices();
+                                stopScanner();
                             }
                         }
                     }
                     requestAnimationFrame(scan);
                 }
                 scan();
+            }).catch(err => {
+                document.getElementById("scannerStatus").innerText = "Nepodařilo se spustit kameru. Zkontrolujte oprávnění.";
+                scanning = false;
             });
+        }
+
+        function stopScanner() {
+            scanning = false;
+            document.getElementById("scannerStatus").innerText = "Skener zastaven.";
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
         }
         
         renderDevices();
