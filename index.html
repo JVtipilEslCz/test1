@@ -172,7 +172,7 @@ function restoreScrollPosition() {
                         }).then(() => {
                             console.log("Zařízení bylo půjčeno");
                             renderDevices();
-                           setTimeout(restoreScrollPosition, 200);
+                           setTimeout(restoreScrollPosition, 100);
                         }).catch((error) => {
                             console.error("Chyba při půjčování zařízení:", error);
                         });
@@ -198,7 +198,7 @@ function restoreScrollPosition() {
                     }).then(() => {
                         console.log("Zařízení bylo vráceno");
                         renderDevices();
-                        setTimeout(restoreScrollPosition, 200);
+                        setTimeout(restoreScrollPosition, 100);
                     }).catch((error) => {
                         console.error("Chyba při vrácení zařízení:", error);
                     });
@@ -262,8 +262,9 @@ function restoreScrollPosition() {
         };
 
         window.onload = function() {
+            restoreScrollPosition();
             renderDevices();
-            setTimeout(restoreScrollPosition, 200);
+            setTimeout(restoreScrollPosition, 100);
         };
     </script>
 </body>
