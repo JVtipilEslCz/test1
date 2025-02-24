@@ -260,7 +260,10 @@ function restoreScrollPosition() {
             document.getElementById("scannerStatus").innerText = "Skener zastaven.";
             renderDevices();
         };
-
+        // Uložení pozice těsně před refreshem stránky
+        window.addEventListener("beforeunload", function() {
+            saveScrollPosition();
+        });
         window.onload = function() {
             restoreScrollPosition();
             renderDevices();
