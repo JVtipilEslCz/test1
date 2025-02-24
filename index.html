@@ -143,12 +143,14 @@
             sessionStorage.setItem("scrollPosition", window.scrollY);
         }
 
-        function restoreScrollPosition() {
-            const savedPosition = sessionStorage.getItem("scrollPosition");
-            if (savedPosition) {
-                window.scrollTo(0, savedPosition);
-            }
-        }
+function restoreScrollPosition() {
+    const savedPosition = sessionStorage.getItem("scrollPosition");
+    if (savedPosition !== null) {
+        setTimeout(() => {
+            window.scrollTo(0, parseInt(savedPosition, 10));
+        }, 100); // Krátké zpoždění pro zajištění načtení obsahu
+    }
+}
 
         window.loanDevice = function(id) {
             saveScrollPosition();
@@ -170,7 +172,7 @@
                         }).then(() => {
                             console.log("Zařízení bylo půjčeno");
                             renderDevices();
-                            restoreScrollPosition();
+                           setTimeout(restoreScrollPosition, 200);
                         }).catch((error) => {
                             console.error("Chyba při půjčování zařízení:", error);
                         });
@@ -196,7 +198,7 @@
                     }).then(() => {
                         console.log("Zařízení bylo vráceno");
                         renderDevices();
-                        restoreScrollPosition();
+                        setTimeout(restoreScrollPosition, 200);
                     }).catch((error) => {
                         console.error("Chyba při vrácení zařízení:", error);
                     });
@@ -260,9 +262,8 @@
         };
 
         window.onload = function() {
-            saveScrollPosition();
-            renderDevices();
             restoreScrollPosition();
+            renderDevices();
         };
     </script>
 </body>
