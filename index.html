@@ -262,8 +262,8 @@ function restoreScrollPosition() {
         };
 
         window.onload = function() {
-            restoreScrollPosition();
             renderDevices();
+            setTimeout(restoreScrollPosition, 200);
         };
     </script>
 </body>
