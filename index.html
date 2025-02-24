@@ -19,11 +19,19 @@
         button.loan { background-color: #28a745; color: white; }
         button.return { background-color: #dc3545; color: white; }
         .container {max-width: 800px; width: 100%; padding: 20px; box-sizing: border-box;}
-        .device-status { font-weight: bold; }
+
+	.device-container { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;}
+	.device-header { display: flex; justify-content: space-between; font-weight: bold; width: 100%;}
+        .device-name { font-weight: bold; text-align: left; flex: 1; }
+	.device-status { font-weight: bold; text-align: right; }
+	.device-details {display: flex; justify-content: space-between; width: 100%;}
+	.device-details div {flex: 1;}
+	.qr-code {flex-shrink: 0; display: flex; justify-content: flex-end;}
+	.device-buttons {display: flex; justify-content: space-between; width: 100%;}
+	.device-buttons button { width: 120px;}
         .device-status.available { color: green; }
         .device-status.loaned { color: red; }
-        .device-container {display: flex; align-items: center;justify-content: space-between; gap: 20px; border-bottom: 1px solid #ddd; padding: 10px 0;}
-        .device-info {flex: 1; min-width: 200px;}
+
       	.add-device { background-color: #ced4da; color: white; border: none; width: 30px; height: 30px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 50%; text-align: center; transition: all 0.3s ease-in-out; margin-left: 10px; display: inline-flex; justify-content: center; align-items: center;}
         #video { width: 300px; height: 300px; object-fit: cover; border-radius: 10px;}
         .scan-buttons-container { display: flex; gap: 10px; justify-content: center;}
@@ -109,27 +117,38 @@
                         li.setAttribute("data-device-id", key);
 
                         li.innerHTML = `
-                            <div class="device-container">
-                                <div class="device-info">
-                                    <span class="device-name">${device.name}</span>
-                                    <span class="device-status ${statusClass}">${statusText}</span>
-                                    <br>
-                                    <span class="device-id">ID: ${key}</span> 
-                                    <br>
-                                    Kdo půjčil: ${device.loanedBy || "-"}<br>
-                                    Komu půjčil: ${device.loanedTo || "-"}<br>
-                                    Datum zápůjčky: ${device.loanDate || "-"}<br>       
-                                    <button class="loan" onclick="loanDevice('${key}')">Půjčit</button>
-                                    <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
-                            </div>
-                            <div id="qrcode-${key}" class="qr-code"></div>
-                         </div>
-                    `;
+                          <div class="device-container">
+                               <!-- První řádek (název a status) -->
+                               <div class="device-header">
+                                   <span class="device-name">${device.name}</span>
+                                   <span class="device-status ${statusClass}">${statusText}</span>
+                               </div>
+        
+                               <!-- Druhý řádek (detaily zařízení) -->
+                               <div class="device-details">
+                                   <div>
+                                       <span class="device-id">ID: ${key}</span>  <br>
+                                       Kdo půjčil: ${device.loanedBy || "-"}<br>
+                                       Komu půjčil: ${device.loanedTo || "-"}<br>
+                                       Datum zápůjčky: ${device.loanDate || "-"}<br>
+                                   </div>
+            
+                                   <!-- QR kód vedle detailů -->
+                                   <div id="qrcode-${key}" class="qr-code"></div>
+                               </div>
+        
+                               <!-- Tlačítka půjčit a vrátit -->
+                               <div class="device-buttons">
+                                   <button class="loan" onclick="loanDevice('${key}')">Půjčit</button>
+                                   <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
+                               </div>
+                           </div>
+                       `;
                         list.appendChild(li);
                         new QRCode(document.getElementById(`qrcode-${key}`), {
                             text: key,
-                            width: 100,
-                            height: 100
+                            width: 75,
+                            height: 75
                         });
                     });
                 } else {
