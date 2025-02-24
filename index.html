@@ -10,8 +10,8 @@
     <style> 
         body { font-family: Calibri, sans-serif; display: flex; justify-content: center; }
 	h1 {text-align: center;}
-        .highlight { background-color: yellow; transition: background-color 0.5s ease-in-out;} /* Podbarvení */
-        .device-name {font-weight: bold; }
+	@keyframes fadeOutHighlight { 0% { background-color: #89CFF0; } 100% { background-color: white; } }
+        .highlight { animation: fadeOutHighlight 5s forwards;}
         #deviceList {list-style-type: none; padding-left: 0; }
         #deviceList li {padding-left: 10px; }
         .device-id {font-size: 0.9em; color: #777; }
@@ -146,7 +146,7 @@
             if (deviceElement) {
                 deviceElement.classList.add("highlight");
                 deviceElement.scrollIntoView({ behavior: "smooth", block: "center" });
-                 setTimeout(() => {removeHighlight(); }, 10000);
+                 setTimeout(() => { deviceElement.classList.remove("highlight"); }, 5000);
             }
         }
 
@@ -190,7 +190,7 @@ function restoreScrollPosition() {
                             console.log("Zařízení bylo půjčeno");
                             renderDevices();
                             restoreScrollPosition();
-                            highlightDevice(id);
+                            setTimeout(() => highlightDevice(id), 50);
                         }).catch((error) => {
                             console.error("Chyba při půjčování zařízení:", error);
                         });
@@ -216,8 +216,8 @@ function restoreScrollPosition() {
                     }).then(() => {
                         console.log("Zařízení bylo vráceno");
                         renderDevices();
-                       restoreScrollPosition();
-                        highlightDevice(id);
+                       	restoreScrollPosition();
+                        setTimeout(() => highlightDevice(id), 50);
                     }).catch((error) => {
                         console.error("Chyba při vrácení zařízení:", error);
                     });
