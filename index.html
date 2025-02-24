@@ -8,11 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
    
     <style> 
-        body { font-family: Calibri, sans-serif; }
-        .highlight {
-            background-color: yellow; /* Podbarvení */
-            transition: background-color 0.5s ease-in-out;
-        }
+        body { font-family: Calibri, sans-serif; display: flex; justify-content: center; }
+        .highlight { background-color: yellow; transition: background-color 0.5s ease-in-out;} /* Podbarvení */
         .device-name {font-weight: bold; }
         #deviceList {list-style-type: none; padding-left: 0; }
         #deviceList li {padding-left: 10px; }
@@ -20,25 +17,33 @@
         button {width: 120px; padding: 10px; margin: 5px; border: none; font-size: 16px; cursor: pointer; border-radius: 5px; }
         button.loan { background-color: #28a745; color: white; }
         button.return { background-color: #dc3545; color: white; }
+        .container {max-width: 800px; width: 100%; padding: 20px; box-sizing: border-box;}
         .device-status { font-weight: bold; }
         .device-status.available { color: green; }
         .device-status.loaned { color: red; }
+        .device-container {display: flex; align-items: center;justify-content: space-between; gap: 20px; border-bottom: 1px solid #ddd; padding: 10px 0;}
+        .device-info {flex: 1; min-width: 200px;}
+        .qr-code {flex-shrink: 0;}  /* Zabrání zmenšení QR kódu */
+      	.add-device { background-color: #ced4da; color: white; border: none; width: 30px; height: 30px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 50%; text-align: center; transition: all 0.3s ease-in-out; margin-left: 10px; display: inline-flex; justify-content: center; align-items: center;}
+
+
+        
     </style>
 </head>
+    
 <body>
-    <h1>Evidenční systém půjčovny</h1>
-    
-    <button onclick="startScanner()">Spustit skener</button>
-    <button onclick="stopScanner()">Zastavit skener</button>
-    <video id="video" width="300" height="200" autoplay></video>
-    <p id="scannerStatus"></p>
+     <div class="container">
+        <h1>Evidenční systém půjčovny</h1>
+        <button onclick="startScanner()">Spustit skener</button>
+        <button onclick="stopScanner()">Zastavit skener</button>
+        <video id="video" width="300" height="200" autoplay></video>
+        <p id="scannerStatus"></p>
 
-    <h2>Přidat nové zařízení</h2>
-    <input type="text" id="deviceName" placeholder="Název zařízení">
-    <button onclick="addDevice()">Přidat</button>
-    
-    <h2>Seznam zařízení</h2>
-    <ul id="deviceList"></ul>
+        <h2 style="display: inline-block;">Seznam zařízení</h2>
+        <button onclick="showAddDeviceDialog()" class="add-device">+</button>
+        <ul id="deviceList"></ul>
+
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
@@ -60,8 +65,14 @@
         let scanning = false;
         let videoStream = null;
 
-        window.addDevice = function() {
-            const name = document.getElementById("deviceName").value;
+        window.showAddDeviceDialog = function() {
+            const deviceName = prompt("Zadejte název zařízení:");
+            if (deviceName) {
+                addDevice(deviceName);
+             }
+        };
+        
+        window.addDevice = function(name) {
             if (!name) return;
             const newDeviceRef = ref(db, 'devices/' + Date.now());
             set(newDeviceRef, {
@@ -94,21 +105,23 @@
 
                         li.setAttribute("data-device-id", key);
 
-                        li.innerHTML = `<div style="display: flex; align-items: center; gap: 10px;">
-                            <div>
-                                <span class="device-name">${device.name}</span>
-                                <span class="device-status ${statusClass}">${statusText}</span>
-                                <br>
-                                <span class="device-id">ID: ${key}</span> 
-                                <br>
-                                Kdo půjčil: ${device.loanedBy || "-"}<br>
-                                Komu půjčil: ${device.loanedTo || "-"}<br>
-                                Datum zápůjčky: ${device.loanDate || "-"}<br>       
-                                <button class="loan" onclick="loanDevice('${key}')">Půjčit</button>
-                                <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
+                        li.innerHTML = `
+                            <div class="device-container">
+                                <div class="device-info">
+                                    <span class="device-name">${device.name}</span>
+                                    <span class="device-status ${statusClass}">${statusText}</span>
+                                    <br>
+                                    <span class="device-id">ID: ${key}</span> 
+                                    <br>
+                                    Kdo půjčil: ${device.loanedBy || "-"}<br>
+                                    Komu půjčil: ${device.loanedTo || "-"}<br>
+                                    Datum zápůjčky: ${device.loanDate || "-"}<br>       
+                                    <button class="loan" onclick="loanDevice('${key}')">Půjčit</button>
+                                    <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
                             </div>
-                            <div id="qrcode-${key}"></div>
-                        </div>`;
+                            <div id="qrcode-${key}" class="qr-code"></div>
+                         </div>
+                    `;
                         list.appendChild(li);
                         new QRCode(document.getElementById(`qrcode-${key}`), {
                             text: key,
