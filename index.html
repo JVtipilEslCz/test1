@@ -24,7 +24,7 @@
         .device-container {display: flex; align-items: center;justify-content: space-between; gap: 20px; border-bottom: 1px solid #ddd; padding: 10px 0;}
         .device-info {flex: 1; min-width: 200px;}
       	.add-device { background-color: #ced4da; color: white; border: none; width: 30px; height: 30px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 50%; text-align: center; transition: all 0.3s ease-in-out; margin-left: 10px; display: inline-flex; justify-content: center; align-items: center;}
-        #video { width: 250px; height: 250px; object-fit: cover; border: 2px solid #ccc; border-radius: 10px;}
+        #video { width: 300px; height: 300px; object-fit: cover; border-radius: 10px;}
 
         
     </style>
@@ -35,7 +35,7 @@
         <h1>Evidenční systém půjčovny</h1>
         <button onclick="startScanner()">Spustit skener</button>
         <button onclick="stopScanner()">Zastavit skener</button>
-        <video id="video" width="250" height="250" autoplay></video>
+        <video id="video" width="300" height="300" autoplay></video>
         <p id="scannerStatus"></p>
 
         <h2 style="display: inline-block;">Seznam zařízení</h2>
