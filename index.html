@@ -26,7 +26,7 @@
          .device-details {display: flex; justify-content: space-between; width: 100%;}
          .device-details div {flex: 1;}
          .device-details span {white-space: nowrap;}
-         .qr-code {max-width: 80px; height: auto; margin-top: 10px; display: block; margin-left: auto; margin-right: auto;}
+         .qr-code {max-width: 75px; height: auto; display: block; margin-left: 0; margin-right: auto;}
          .device-buttons {display: flex; justify-content: space-between; width: 100%;}
          .device-buttons button { width: 120px;}
          .device-status.available { color: green; }
@@ -191,7 +191,7 @@
                                          Firma: ${device.company || "-"}<br> 
                                          Telefon: ${device.phone || "-"}<br>  
                                      </div>
-                                     <div id="qrcode-${key}" class="qr-code"></div>
+                                     <div id="qrcode-${key}" class="qr-code" style="margin-left: 0;"></div>
                                  </div>
                                  <div class="device-buttons">
                                      <button class="loan" onclick="loanDeviceButton('${key}')">Půjčit</button>
