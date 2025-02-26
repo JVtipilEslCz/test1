@@ -8,20 +8,36 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+ 
 <style> 
 body { font-family: Calibri, sans-serif; display: flex; justify-content: center; }
-h1 { text-align: center; }
+h1 {text-align: center;}
 @keyframes fadeOutHighlight { 0% { background-color: #89CFF0; } 100% { background-color: white; } }
-.highlight { animation: fadeOutHighlight 5s forwards; }
-.container { max-width: 500px; width: 100%; padding: 20px; box-sizing: border-box; }
-.device-container { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
-.device-header { display: flex; justify-content: space-between; font-weight: bold; width: 100%; }
-.device-status.available { color: green; }
-.device-status.loaned { color: red; }
-button { width: 120px; padding: 10px; margin: 5px; border: none; cursor: pointer; border-radius: 5px; }
+.highlight { animation: fadeOutHighlight 5s forwards;}
+#deviceList {list-style-type: none; padding-left: 0; }
+#deviceList li {padding-left: 10px; }
+.device-id {font-size: 0.9em; color: #777; }
+button {width: 100px; padding: 10px; margin: 5px; border: none; font-size: 16px; cursor: pointer; border-radius: 5px; }
 button.loan { background-color: #28a745; color: white; }
 button.return { background-color: #dc3545; color: white; }
-.modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; box-shadow: 0px 4px 6px rgba(0,0,0,0.1); border-radius: 5px; }
+.container {max-width: 500px; width: 100%; padding: 20px; box-sizing: border-box;}
+
+.device-container { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;}
+.device-header { display: flex; justify-content: space-between; font-weight: bold; width: 100%;}
+.device-name { font-weight: bold; text-align: left; flex: 1; }
+.device-status { font-weight: bold; text-align: right; }
+.device-details {display: flex; justify-content: space-between; width: 100%;}
+.device-details div {flex: 1;}
+.qr-code {flex-shrink: 0; display: flex; justify-content: flex-end;}
+.device-buttons {display: flex; justify-content: space-between; width: 100%;}
+.device-buttons button { width: 120px;}
+.device-status.available { color: green; }
+.device-status.loaned { color: red; }
+
+.manage-device { background-color: #ced4da; color: white; border: none; width: 30px; height: 30px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 50%; text-align: center; transition: all 0.3s ease-in-out; margin-left: 10px; display: inline-flex; justify-content: center; align-items: center;}
+#video { width: 300px; height: 300px; object-fit: cover; border-radius: 10px;}
+.scan-buttons-container { display: flex; gap: 10px; justify-content: center;}
+.scan-button { background-color: #ced4da;color: black; border: none; font-size: 16px; cursor: pointer; border-radius: 5px; transition: all 0.3s ease-in-out; width: 150px; display: flex; align-items: center; justify-content: center; text-align: center; }
 </style>
 </head>
 
@@ -29,16 +45,18 @@ button.return { background-color: #dc3545; color: white; }
 <div class="container">
 <h1>Evidenční systém půjčovny</h1>
 <div class="scan-buttons-container">
-<button onclick="startScanner()">Spustit skener</button>
-<button onclick="stopScanner()">Zastavit skener</button>
+<button class="scan-button" onclick="startScanner()">Spustit skener</button>
+<button class="scan-button" onclick="stopScanner()">Zastavit skener</button>
 </div>
 <video id="video" width="300" height="300" autoplay></video>
 <p id="scannerStatus"></p>
-<h2>Seznam zařízení</h2>
-<button onclick="showAddDeviceDialog()">+</button>
-<button onclick="showDeleteDeviceDialog()">-</button>
-<button onclick="exportDevices()">E</button>
+
+<h2 style="display: inline-block;">Seznam zařízení</h2>
+<button onclick="showAddDeviceDialog()" class="manage-device">+</button>
+<button onclick="showDeleteDeviceDialog()" class="manage-device">-</button>
+<button onclick="ExportDevice()" class="manage-device">E</button>
 <ul id="deviceList"></ul>
+
 </div>
 
 <script type="module">
@@ -46,132 +64,338 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebas
 import { getDatabase, ref, set, update, get, remove } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
 
 const firebaseConfig = {
-    apiKey: "XXX",
-    authDomain: "XXX.firebaseapp.com",
-    databaseURL: "XXX.firebaseio.com",
-    projectId: "XXX",
-    storageBucket: "XXX.appspot.com",
-    messagingSenderId: "XXX",
-    appId: "XXX"
+apiKey: "AIzaSyDff7I609AeT2bpdjIKewdAtzfPvOr8Hg4",
+authDomain: "test2-c4d26.firebaseapp.com",
+databaseURL: "https://test2-c4d26-default-rtdb.europe-west1.firebasedatabase.app",
+projectId: "test2-c4d26",
+storageBucket: "test2-c4d26.firebasestorage.app",
+messagingSenderId: "696702216457",
+appId: "1:696702216457:web:54cf142e7a63fcecb88bd8"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-function getDeviceRef(id) {
-    return ref(db, 'devices/' + id);
-}
-
-function showCustomDialog(message, callback) {
-    const modal = document.createElement("div");
-    modal.classList.add("modal");
-    modal.innerHTML = `
-        <p>${message}</p>
-        <input type="text" id="modalInput">
-        <button id="modalConfirm">OK</button>
-        <button id="modalCancel">Zrušit</button>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById("modalConfirm").onclick = () => {
-        callback(document.getElementById("modalInput").value);
-        document.body.removeChild(modal);
-    };
-    document.getElementById("modalCancel").onclick = () => {
-        document.body.removeChild(modal);
-    };
-}
+let scanning = false;
+let videoStream = null;
 
 window.showAddDeviceDialog = function() {
-    showCustomDialog("Zadejte název zařízení:", (deviceName) => {
-        if (deviceName) {
-            const newDeviceRef = ref(db, 'devices/' + Date.now());
-            set(newDeviceRef, { name: deviceName, status: "Dostupné" }).then(renderDevices);
-        }
-    });
+const deviceName = prompt("Zadejte název zařízení:");
+if (deviceName) {
+addDevice(deviceName);
+ }
+};
+
+window.addDevice = function(name) {
+if (!name) return;
+const newDeviceRef = ref(db, 'devices/' + Date.now());
+set(newDeviceRef, {
+name: name,
+status: "Dostupné",
+loanedBy: "",
+loanedTo: "",
+loanDate: ""
+}).then(() => {
+console.log("Zařízení bylo přidáno");
+renderDevices();
+}).catch((error) => {
+console.error("Chyba při přidávání zařízení:", error);
+});
 };
 
 window.showDeleteDeviceDialog = function() {
-    showCustomDialog("Zadejte ID zařízení k odstranění:", (deviceId) => {
-        if (deviceId) {
-            remove(getDeviceRef(deviceId)).then(renderDevices);
-        }
-    });
+const deviceId = prompt("Zadejte ID zařízení, které chcete smazat:");
+if (deviceId) {
+deleteDevice(deviceId);
+}
 };
 
+window.deleteDevice = function(id) {
+if (!id) return;
+
+  const deviceRef = ref(db, 'devices/' + id);
+
+get(deviceRef).then((snapshot) => {
+if (snapshot.exists()) {
+if (confirm(`Opravdu chcete smazat zařízení s ID: ${id}?`)) {
+  remove(deviceRef).then(() => {
+console.log("Zařízení bylo úspěšně smazáno.");
+  renderDevices(); // Aktualizace seznamu
+}).catch((error) => {
+console.error("Chyba při mazání zařízení:", error);
+});
+}
+} else {
+  alert("Zařízení s tímto ID neexistuje.");
+}
+}).catch((error) => {
+console.error("Chyba při načítání zařízení:", error);
+});
+};
+
+
+
 function renderDevices() {
-    const list = document.getElementById("deviceList");
-    list.innerHTML = "";
-    get(ref(db, 'devices/')).then((snapshot) => {
-        if (snapshot.exists()) {
-            Object.entries(snapshot.val()).forEach(([id, device]) => {
-                let li = document.createElement("li");
-                li.innerHTML = `
-                    <div class="device-container">
-                        <div class="device-header">
-                            <span>${device.name}</span>
-                            <span class="device-status ${device.status === "Dostupné" ? "available" : "loaned"}">${device.status}</span>
-                        </div>
-                        <button class="loan" onclick="loanDevice('${id}')">Půjčit</button>
-                        <button class="return" onclick="returnDevice('${id}')">Vrátit</button>
-                    </div>
-                `;
-                list.appendChild(li);
-            });
-        }
-    });
+const list = document.getElementById("deviceList");
+list.innerHTML = "";
+const devicesRef = ref(db, 'devices/');
+get(devicesRef).then((snapshot) => {
+if (snapshot.exists()) {
+const devices = snapshot.val();
+Object.keys(devices).forEach((key) => {
+const device = devices[key];
+let li = document.createElement("li");
+
+let statusClass = device.status === "Dostupné" ? "available" : "loaned";
+let statusText = device.status === "Dostupné" ? "Dostupné" : "Půjčeno";
+
+li.setAttribute("data-device-id", key);
+
+li.innerHTML = `
+<div class="device-container">
+ <div class="device-header">
+ <span class="device-name">${device.name}</span>
+ <span class="device-status ${statusClass}">${statusText}</span>
+ </div>
+ <div class="device-details">
+ <div>
+ <span class="device-id">ID: ${key}</span><br>
+ Kdo půjčil: ${device.loanedBy || "-"}<br>
+ Komu půjčil: ${device.loanedTo || "-"}<br>
+ Datum zápůjčky: ${device.loanDate || "-"}<br>
+ </div>
+ <div id="qrcode-${key}" class="qr-code"></div>
+ </div>
+ <div class="device-buttons">
+ <button class="loan" onclick="loanDevice('${key}')">Půjčit</button>
+ <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
+ </div>
+ </div>
+ `;
+list.appendChild(li);
+new QRCode(document.getElementById(`qrcode-${key}`), {
+text: key,
+width: 75,
+height: 75
+});
+});
+} else {
+console.log("Žádná data k zobrazení.");
+}
+}).catch((error) => {
+console.error("Chyba při načítání zařízení:", error);
+});
 }
 
-window.exportDevices = function() {
+function highlightDevice(deviceId) {
+removeHighlight();
+const deviceElement = document.querySelector(`[data-device-id="${deviceId}"]`);
+if (deviceElement) {
+deviceElement.classList.add("highlight");
+deviceElement.scrollIntoView({ behavior: "smooth", block: "center" });
+ setTimeout(() => { deviceElement.classList.remove("highlight"); }, 5000);
+}
+}
+
+function removeHighlight() {
+document.querySelectorAll(".highlight").forEach(el => {
+el.classList.remove("highlight");
+});
+}
+
+function saveScrollPosition() {
+sessionStorage.setItem("scrollPosition", window.scrollY);
+}
+
+function restoreScrollPosition() {
+const savedPosition = sessionStorage.getItem("scrollPosition");
+if (savedPosition !== null) {
+setTimeout(() => {
+window.scrollTo(0, parseInt(savedPosition, 10));
+}, 100); // Krátké zpoždění pro zajištění načtení obsahu
+}
+}
+
+window.loanDevice = function(id) {
+saveScrollPosition();
+const deviceRef = ref(db, 'devices/' + id);
+get(deviceRef).then((snapshot) => {
+if (snapshot.exists()) {
+const deviceData = snapshot.val();
+const loanedBy = prompt("Kdo půjčil?");
+const loanedTo = prompt("Komu půjčil?");
+const loanDate = new Date().toLocaleDateString("cs-CZ");
+
+if (loanedBy && loanedTo) {
+update(deviceRef, {
+name: deviceData.name,
+status: "Půjčeno",
+loanedBy,
+loanedTo,
+loanDate
+}).then(() => {
+console.log("Zařízení bylo půjčeno");
+renderDevices();
+restoreScrollPosition();
+setTimeout(() => highlightDevice(id), 50);
+}).catch((error) => {
+console.error("Chyba při půjčování zařízení:", error);
+});
+}
+}
+}).catch((error) => {
+console.error("Chyba při načítání zařízení:", error);
+});
+};
+
+window.returnDevice = function(id) {
+saveScrollPosition();
+const deviceRef = ref(db, 'devices/' + id);
+get(deviceRef).then((snapshot) => {
+if (snapshot.exists()) {
+const deviceData = snapshot.val();
+update(deviceRef, {
+name: deviceData.name,
+status: "Dostupné",
+loanedBy: "",
+loanedTo: "",
+loanDate: ""
+}).then(() => {
+console.log("Zařízení bylo vráceno");
+renderDevices();
+ restoreScrollPosition();
+setTimeout(() => highlightDevice(id), 50);
+}).catch((error) => {
+console.error("Chyba při vrácení zařízení:", error);
+});
+}
+}).catch((error) => {
+console.error("Chyba při načítání zařízení:", error);
+});
+};
+
+window.startScanner = function() {
+if (scanning) return;
+scanning = true;
+document.getElementById("scannerStatus").innerText = "Spouštím skener...";
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
+videoStream = stream;
+let video = document.getElementById("video");
+video.srcObject = stream;
+let canvas = document.createElement("canvas");
+let ctx = canvas.getContext("2d");
+document.getElementById("scannerStatus").innerText = "Skenování...";
+
+function scan() {
+if (!scanning) return;
+if (video.readyState === video.HAVE_ENOUGH_DATA) {
+canvas.width = video.videoWidth;
+canvas.height = video.videoHeight;
+ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+let code = jsQR(imageData.data, canvas.width, canvas.height);
+
+if (code) {
+console.log("Nalezen QR kód:", code.data);
+document.getElementById("scannerStatus").innerText = "QR kód naskenován!";
+scanning = false;
+if (videoStream) {
+videoStream.getTracks().forEach(track => track.stop());
+}
+
+highlightDevice(code.data);
+}
+}
+if (scanning) {
+requestAnimationFrame(scan);
+}
+}
+
+scan();
+}).catch(err => {
+document.getElementById("scannerStatus").innerText = "Nepodařilo se spustit kameru. Zkontrolujte oprávnění.";
+scanning = false;
+});
+};
+
+window.stopScanner = function() {
+scanning = false;
+if (videoStream) {
+videoStream.getTracks().forEach(track => track.stop());
+}
+document.getElementById("scannerStatus").innerText = "Skener zastaven.";
+renderDevices();
+};
+
+window.ExportDevice = function() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    get(ref(db, 'devices/')).then((snapshot) => {
-        if (!snapshot.exists()) return alert("Žádná zařízení k exportu.");
+    const devicesRef = ref(db, 'devices/');
 
-        Promise.all(Object.keys(snapshot.val()).map(generateQRCode)).then(qrDataArray => {
+    get(devicesRef).then((snapshot) => {
+        if (!snapshot.exists()) {
+            alert("Žádná zařízení k exportu.");
+            return;
+        }
+
+        const devices = snapshot.val();
+        const keys = Object.keys(devices);
+        const qrPromises = keys.map((key) => generateQRCode(key));
+
+        Promise.all(qrPromises).then((qrDataArray) => {
             let x = 10, y = 10;
+            const qrSize = 50, spacing = 10;
+            const pageWidth = doc.internal.pageSize.width;
+            const pageHeight = doc.internal.pageSize.height;
+
             qrDataArray.forEach(({ key, imgData }) => {
                 doc.text(`ID: ${key}`, x, y);
-                doc.addImage(imgData, "PNG", x, y + 5, 50, 50);
-                x += 60;
-                if (x > 180) { x = 10; y += 70; }
+                doc.addImage(imgData, "PNG", x, y + 5, qrSize, qrSize);
+
+                x += qrSize + spacing;
+                if (x + qrSize > pageWidth - 10) {
+                    x = 10;
+                    y += qrSize + spacing + 10;
+                }
+                if (y + qrSize > pageHeight - 10) {
+                    doc.addPage();
+                    x = 10;
+                    y = 10;
+                }
             });
+
             doc.save("QR_kody.pdf");
         });
+    }).catch((error) => {
+        console.error("Chyba při načítání zařízení:", error);
     });
 };
 
 function generateQRCode(key) {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         const tempDiv = document.createElement("div");
         document.body.appendChild(tempDiv);
-        new QRCode(tempDiv, { text: key, width: 128, height: 128 });
+        const qr = new QRCode(tempDiv, { text: key, width: 128, height: 128 });
+
         setTimeout(() => {
             const img = tempDiv.querySelector("img");
-            resolve({ key, imgData: img.src });
+            const imgData = img ? img.src : null;
             document.body.removeChild(tempDiv);
+            resolve({ key, imgData });
         }, 300);
     });
 }
 
-let scanning = false, videoStream = null;
-window.startScanner = function() {
-    if (scanning) return;
-    scanning = true;
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
-        videoStream = stream;
-        document.getElementById("video").srcObject = stream;
-        document.getElementById("scannerStatus").innerText = "Skenování...";
-    }).catch(() => stopScanner("Nepodařilo se spustit kameru."));
-};
 
-window.stopScanner = function(message = "Skener zastaven.") {
-    scanning = false;
-    if (videoStream) videoStream.getTracks().forEach(track => track.stop());
-    document.getElementById("scannerStatus").innerText = message;
-};
 
-window.onload = renderDevices;
+window.addEventListener("beforeunload", function() {
+saveScrollPosition();
+});
+window.onload = function() {
+restoreScrollPosition();
+renderDevices();
+setTimeout(restoreScrollPosition, 100);
+};
 </script>
 </body>
 </html>
