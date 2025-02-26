@@ -391,39 +391,43 @@
              const { jsPDF } = window.jspdf;
              const doc = new jsPDF();
              const devicesRef = ref(db, 'devices/');
-         
+    
              get(devicesRef).then((snapshot) => {
                  if (!snapshot.exists()) {
                      alert("Žádná zařízení k exportu.");
                      return;
                  }
-         
+
                  const devices = snapshot.val();
                  const keys = Object.keys(devices);
                  const qrPromises = keys.map((key) => generateQRCode(key));
-         
+
                  Promise.all(qrPromises).then((qrDataArray) => {
                      let x = 10, y = 10;
-                     const qrSize = 50, spacing = 10;
+                     const qrSize = 25, spacing = 10;
                      const pageWidth = doc.internal.pageSize.width;
                      const pageHeight = doc.internal.pageSize.height;
-         
+                     let counter = 1; // Pořadové číslo začínáme na 1
+
                      qrDataArray.forEach(({ key, imgData }) => {
-                         doc.text(`ID: ${key}`, x, y);
-                         doc.addImage(imgData, "PNG", x, y + 5, qrSize, qrSize);
-         
+                         doc.setFontSize(7);  // Nastaví velikost písma na 8 bodů
+                         doc.text(`${counter}. ID: ${key}`, x, y); // Přidáme pořadové číslo před ID
+                         doc.addImage(imgData, "PNG", x, y+1, qrSize, qrSize);
+
                          x += qrSize + spacing;
                          if (x + qrSize > pageWidth - 10) {
                              x = 10;
-                             y += qrSize + spacing + 10;
+                             y += qrSize + spacing;
                          }
                          if (y + qrSize > pageHeight - 10) {
                              doc.addPage();
                              x = 10;
                              y = 10;
                          }
+
+                         counter++; // Inkrementace čítače pro další QR kód
                      });
-         
+
                      doc.save("QR_kody.pdf");
                  });
              }).catch((error) => {
