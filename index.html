@@ -78,7 +78,7 @@
             <input type="text" id="phone" required><br><br>
 
             <button type="submit">Půjčit</button>
-            <button type="button" onclick="closeLoanModal()">Zrušit</button>
+            <button type="button" id="cancelLoanButton">Zrušit</button>
           </form>
         </div>
       </div>
@@ -245,8 +245,8 @@
          }
 // Funkce pro zobrazení dialogu při půjčení
 					window.loanDeviceButton = function(id) {
-						  openLoanModal(id); // Otevře modální okno s formulářem
-						};
+						openLoanModal(id); // Otevře modální okno s formulářem
+					};
 
 
 					
@@ -267,12 +267,16 @@
           };
         }
 
+	
 // Funkce pro zavření modálního okna
-        function closeLoanModal() {
-          const modal = document.getElementById("loanModal");
-          modal.style.display = "none";
-          document.getElementById("loanForm").reset(); // Vyčistí formulář
-        }
+function closeLoanModal() {
+    const modal = document.getElementById("loanModal");
+    modal.style.display = "none"; // Zavře modální okno
+    document.getElementById("loanForm").reset(); // Vyčistí formulář
+}
+
+// Připojení události na tlačítko "Zrušit"
+document.getElementById("loanModal").querySelector('button[type="button"]').addEventListener('click', closeLoanModal);
 
 // Funkce pro půjčení zařízení s novými údaji
         function loanDevice(id, loanedBy, loanedTo, company, phone) {
