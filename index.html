@@ -68,17 +68,17 @@
         <div class="modal-content">
           <h2>Formulář pro půjčení zařízení</h2>
           <form id="loanForm">
-            <label for="loanedBy">Kdo půjčil:</label>
-            <input type="text" id="loanedBy" required><br><br>
+            <label for="loanedBy">Půjčující:</label>
+            <input type="text" id="loanedBy" placeholder="Zadejte své jméno" required><br><br>
 
-            <label for="loanedTo">Komu půjčil:</label>
-            <input type="text" id="loanedTo" required><br><br>
+            <label for="loanedTo">Zákazník:</label>
+            <input type="text" id="loanedTo" placeholder="Zadejte jméno zákazníka" required><br><br>
 
             <label for="company">Firma:</label>
-            <input type="text" id="company" required><br><br>
+            <input type="text" id="company" placeholder="Zadejte firmu zákazníka" required><br><br>
 
             <label for="phone">Telefon:</label>
-            <input type="text" id="phone" required><br><br>
+            <input type="text" id="phone" placeholder="Zadejte telefon zákazníka" required><br><br>
 
             <button type="submit">Půjčit</button>
             <button type="button" id="cancelLoanButton">Zrušit</button>
@@ -123,7 +123,7 @@
          loanedBy: "",
          loanedTo: "",
          loanDate: "",
-	 			 company: "",   
+	 company: "",   
          phone: ""  
          }).then(() => {
          console.log("Zařízení bylo přidáno");
@@ -190,8 +190,8 @@
                                  <div class="device-details">
                                      <div>
                                          <span class="device-id">ID: ${key}</span><br>
-                                         Kdo půjčil: ${device.loanedBy || "-"}<br>
-                                         Komu půjčil: ${device.loanedTo || "-"}<br>
+                                         Půjčující: ${device.loanedBy || "-"}<br>
+                                         Zákazník: ${device.loanedTo || "-"}<br>
                                          Datum zápůjčky: ${device.loanDate || "-"}<br>
                                          Firma: ${device.company || "-"}<br> 
                                          Telefon: ${device.phone || "-"}<br>  
@@ -505,7 +505,7 @@
              get(loanHistoryRef).then((snapshot) => {
                  if (snapshot.exists()) {
                      const historyData = snapshot.val();
-                     let csvContent = "Zařízení;Půjčující;Půjčený;Půjčeno dne;Firma;Telefon;Vráceno dne\n";
+                     let csvContent = "Zařízení;Půjčující;Zákazník;Půjčeno dne;Firma;Telefon;Vráceno dne\n";
                      for (const key in historyData) {
                          const entry = historyData[key];
                          const name = entry.name || '';
