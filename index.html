@@ -123,7 +123,7 @@
          loanedBy: "",
          loanedTo: "",
          loanDate: "",
-	 company: "",   
+	 			 company: "",   
          phone: ""  
          }).then(() => {
          console.log("Zařízení bylo přidáno");
@@ -248,11 +248,10 @@
          }, 100); // Krátké zpoždění pro zajištění načtení obsahu
          }
          }
-// Funkce pro zobrazení dialogu při půjčení
-					window.loanDeviceButton = function(id) {
-						openLoanModal(id); // Otevře modální okno s formulářem
-					};
 
+	window.loanDeviceButton = function(id) {
+		openLoanModal(id); // Otevře modální okno s formulářem
+	};
 
 					
 // Funkce pro otevření modálního okna
@@ -274,14 +273,12 @@
 
 	
 // Funkce pro zavření modálního okna
-function closeLoanModal() {
-    const modal = document.getElementById("loanModal");
-    modal.style.display = "none"; // Zavře modální okno
-    document.getElementById("loanForm").reset(); // Vyčistí formulář
-}
-
-// Připojení události na tlačítko "Zrušit"
-document.getElementById("loanModal").querySelector('button[type="button"]').addEventListener('click', closeLoanModal);
+			function closeLoanModal() {
+    		const modal = document.getElementById("loanModal");
+   				 modal.style.display = "none"; // Zavře modální okno
+   				 document.getElementById("loanForm").reset(); // Vyčistí formulář
+			}
+			document.getElementById("loanModal").querySelector('button[type="button"]').addEventListener('click', closeLoanModal);
 
 // Funkce pro půjčení zařízení s novými údaji
         function loanDevice(id, loanedBy, loanedTo, company, phone) {
@@ -291,7 +288,6 @@ document.getElementById("loanModal").querySelector('button[type="button"]').addE
             if (snapshot.exists()) {
               const deviceData = snapshot.val();
               const loanDate = new Date().toLocaleDateString("cs-CZ");
-
               update(deviceRef, {
                 name: deviceData.name,
                 status: "Půjčeno",
@@ -302,10 +298,8 @@ document.getElementById("loanModal").querySelector('button[type="button"]').addE
                 phone
               }).then(() => {
                 console.log("Zařízení bylo půjčeno");
-		 // Přidání záznamu do historie půjček (logování do loanHistory)
 		        const loanHistoryRef = ref(db, 'loanHistory/'); // Odkaz na loanHistory
 		        const newLoanRef = push(loanHistoryRef); // Vytvoření nového záznamu s unikátním ID
-
 		        set(newLoanRef, {
 		          name: deviceData.name,
 		          loanedBy,
@@ -319,8 +313,7 @@ document.getElementById("loanModal").querySelector('button[type="button"]').addE
 		        }).catch((error) => {
 		          console.error("Chyba při ukládání do historie půjček:", error);
 		        });
-		      
-                renderDevices();
+		                      renderDevices();
                 restoreScrollPosition();
                 setTimeout(() => highlightDevice(id), 50);
                 closeLoanModal(); // Zavře modální okno po úspěšném půjčení
@@ -507,63 +500,40 @@ document.getElementById("loanModal").querySelector('button[type="button"]').addE
              });
          }
          
-window.ExportLoanHistory = function() {
-  const { jsPDF } = window.jspdf; // Načteme jsPDF knihovnu
-  const doc = new jsPDF(); // Vytvoříme nový PDF dokument
-	
-doc.setFont('Tahoma'); // Vybereme font, který by měl podporovat české znaky
-  doc.setFontSize(8);
-
-  // Získáme data z loanHistory
-  const loanHistoryRef = ref(db, 'loanHistory/');
-  
-  get(loanHistoryRef).then((snapshot) => {
-    if (snapshot.exists()) {
-      const historyData = snapshot.val();
-      
-      // Titulek pro PDF
-      doc.setFontSize(10);
-      doc.text('Historie půjčování zařízení', 10, 10);
-      
-      // Nastavení fontu pro obsah
-      doc.setFontSize(8);
-
-      let lineHeight = 30; // Počáteční pozice pro první řádek
-
-      // Pro každý záznam v historii půjček
-      for (const key in historyData) {
-        const entry = historyData[key];
-        const name = entry.name || '';
-        const loanedBy = entry.loanedBy || '';
-        const loanedTo = entry.loanedTo || '';
-        const loanDate = entry.loanDate || '';
-        const company = entry.company || '';
-        const phone = entry.phone || '';
-        const returnDate = entry.returnDate || '';
-
-        // Přidáme text pro každý záznam do PDF
-        const text = `Zařízení: ${name}, Půjčující: ${loanedBy}, Půjčený: ${loanedTo}, Půjčeno dne: ${loanDate}, Firma: ${company}, Telefon: ${phone}, Vráceno dne: ${returnDate}`;
+         window.ExportLoanHistory = function() {
+             const loanHistoryRef = ref(db, 'loanHistory/');
+             get(loanHistoryRef).then((snapshot) => {
+                 if (snapshot.exists()) {
+                     const historyData = snapshot.val();
+                     let csvContent = "Zařízení;Půjčující;Půjčený;Půjčeno dne;Firma;Telefon;Vráceno dne\n";
+                     for (const key in historyData) {
+                         const entry = historyData[key];
+                         const name = entry.name || '';
+                         const loanedBy = entry.loanedBy || '';
+                         const loanedTo = entry.loanedTo || '';
+                         const loanDate = entry.loanDate || '';
+                         const company = entry.company || '';
+                         const phone = entry.phone ? `'${entry.phone}` : '';
+                         const returnDate = entry.returnDate || '';
+                         csvContent += `"${name}";"${loanedBy}";"${loanedTo}";"${loanDate}";"${company}";"${phone}";"${returnDate}"\n`;
+                     }
+                     const BOM = "\uFEFF";  
+                     const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+                     const url = URL.createObjectURL(blob);
+                     const a = document.createElement("a");
+                     a.href = url;
+                     a.download = "loan_history.csv";
+                     document.body.appendChild(a);
+                     a.click();
+                     document.body.removeChild(a);
+                 } else {
+                     console.log('Žádné záznamy v historii půjček.');
+                 }
+             }).catch((error) => {
+                 console.error('Chyba při získávání historie půjček:', error);
+             });
+         }
         
-        doc.text(text, 8, lineHeight);
-        lineHeight += 10; // Posuneme pozici pro další řádek
-
-        // Pokud je potřeba, přidáme novou stránku v PDF, aby se nepřekrývaly řádky
-        if (lineHeight > 270) {
-          doc.addPage(); // Přidáme novou stránku
-          lineHeight = 20; // Nastavíme pozici pro nový text na nové stránce
-        }
-      }
-
-      // Uložíme PDF soubor
-      doc.save('loan_history.pdf');
-    } else {
-      console.log('Žádné záznamy v historii půjček.');
-    }
-  }).catch((error) => {
-    console.error('Chyba při získávání historie půjček:', error);
-  });
-} 
-         
          window.addEventListener("beforeunload", function() {
          saveScrollPosition();
          });
