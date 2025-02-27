@@ -20,7 +20,7 @@
          button {width: 100px; padding: 10px; margin: 5px; border: none; font-size: 16px; cursor: pointer; border-radius: 5px; }
          button.loan { background-color: #28a745; color: white; }
          button.return { background-color: #dc3545; color: white; }
-         .container {max-width: 500px; width: 100%; padding: 20px; box-sizing: border-box;}
+         .container {max-width: 600px; width: 100%; padding: 20px; box-sizing: border-box;}
          .device-container { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;}
          .device-header { display: flex; justify-content: space-between; font-weight: bold; width: 100%;}
          .device-name { font-weight: bold; text-align: left; flex: 1; }
@@ -56,11 +56,11 @@
          </div>
          <video id="video" width="300" height="300" autoplay></video>
          <p id="scannerStatus"></p>
-         <h2 style="display: inline-block;">Seznam zařízení</h2>
+         <h2 style="display: inline-block;">Seznam zařízení</h2> <br>
          <button onclick="showAddDeviceDialog()" class="manage-device">+</button>
          <button onclick="showDeleteDeviceDialog()" class="manage-device">-</button>
-         <button onclick="ExportDevice()" class="manage-device">E</button>
-	 <button onclick="ExportLoanHistory()" class="manage-device">V</button>
+         <button onclick="ExportDevice()" class="manage-device">QR</button>
+	 <button onclick="ExportLoanHistory()" class="manage-device">E</button>
          <ul id="deviceList"></ul>
       </div>
 
