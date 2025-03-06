@@ -7,7 +7,6 @@
       <script src="https://cdn.jsdelivr.net/npm/jsqr"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 			<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 			<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 			<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -394,49 +393,63 @@
              });
          };
          
-         window.startScanner = function() {
-         if (scanning) return;
-         scanning = true;
-         document.getElementById("scannerStatus").innerText = "Spouštím skener...";
-         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
-         videoStream = stream;
-         let video = document.getElementById("video");
-         video.srcObject = stream;
-         let canvas = document.createElement("canvas");
-         let ctx = canvas.getContext("2d");
-         document.getElementById("scannerStatus").innerText = "Skenování...";
-         
-         function scan() {
-         if (!scanning) return;
-         if (video.readyState === video.HAVE_ENOUGH_DATA) {
-         canvas.width = video.videoWidth;
-         canvas.height = video.videoHeight;
-         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-         let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-         let code = jsQR(imageData.data, canvas.width, canvas.height);
-         
-         if (code) {
-         console.log("Nalezen QR kód:", code.data);
-         document.getElementById("scannerStatus").innerText = "QR kód naskenován!";
-         scanning = false;
-         if (videoStream) {
-         videoStream.getTracks().forEach(track => track.stop());
-         }
-         
-         highlightDevice(code.data);
-         }
-         }
-         if (scanning) {
-         requestAnimationFrame(scan);
-         }
-         }
-         
-         scan();
-         }).catch(err => {
-         document.getElementById("scannerStatus").innerText = "Nepodařilo se spustit kameru. Zkontrolujte oprávnění.";
-         scanning = false;
-         });
-         };
+window.startScanner = function() {
+    if (scanning) return;
+    scanning = true;
+    document.getElementById("scannerStatus").innerText = "Spouštím skener...";
+
+    navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" }, 
+        audio: false // Explicitně vypnout zvuk (Safari může vyžadovat oprávnění i pro mikrofon)
+    })
+    .then(stream => {
+        videoStream = stream;
+        let video = document.getElementById("video");
+        video.srcObject = stream;
+
+        // ✅ DŮLEŽITÉ PRO SAFARI (zabrání otevření videa na celou obrazovku)
+        video.setAttribute("playsinline", true);
+        video.setAttribute("autoplay", true);
+
+        let canvas = document.createElement("canvas");
+        let ctx = canvas.getContext("2d");
+        document.getElementById("scannerStatus").innerText = "Skenování...";
+
+        function scan() {
+            if (!scanning) return;
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let code = jsQR(imageData.data, canvas.width, canvas.height);
+
+                if (code) {
+                    console.log("Nalezen QR kód:", code.data);
+                    document.getElementById("scannerStatus").innerText = "QR kód naskenován!";
+                    scanning = false;
+
+                    if (videoStream) {
+                        videoStream.getTracks().forEach(track => track.stop());
+                    }
+
+                    highlightDevice(code.data);
+                }
+            }
+
+            // Safari někdy špatně pracuje s `requestAnimationFrame`
+            setTimeout(scan, 200); // 200ms mezi skeny → stabilnější
+        }
+
+        scan();
+    })
+    .catch(err => {
+        document.getElementById("scannerStatus").innerText = "Nepodařilo se spustit kameru. Zkontrolujte oprávnění.";
+        console.error("Chyba při spuštění skeneru:", err);
+        scanning = false;
+    });
+};
+
          
          window.stopScanner = function() {
          scanning = false;
