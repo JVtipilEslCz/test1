@@ -108,8 +108,13 @@
          appId: "1:696702216457:web:54cf142e7a63fcecb88bd8"
          };
          
-         const app = initializeApp(firebaseConfig);
-         const db = getDatabase(app);
+         let db;
+ 	 try {
+   	 const app = initializeApp(firebaseConfig);
+  	  db = getDatabase(app);
+		} catch (error) {
+ 	   console.error("Chyba při inicializaci Firebase:", error);
+	}
          
          let scanning = false;
          let videoStream = null;
