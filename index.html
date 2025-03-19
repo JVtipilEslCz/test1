@@ -7,6 +7,7 @@
       <script src="https://cdn.jsdelivr.net/npm/jsqr"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 			<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 			<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 			<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -51,7 +52,11 @@
          .modal-content button { padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%;}
          .modal-content button[type="button"] { background-color: #dc3545; margin-top: 10px;}
          body.modal-open { overflow: hidden;}
-						
+	      
+	#scrollTopBtn {position: fixed; bottom: 20px;left: 20px;display:none; background-color: #ced4da; color: white; border: none; width: 30px; height: 30px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 50%; text-align: center; transition: all 0.3s ease-in-out; margin-left: 10px; display: flex; justify-content: center; align-items: flex-start; padding-top: 2px; }
+	#scrollTopBtn:hover {background-color: #0056b3;}
+
+	      
 </style>
    </head>
    <body>
@@ -92,7 +97,8 @@
           </form>
         </div>
       </div>
-				
+
+<button id="scrollTopBtn">↑</button>
 								
 <script type="module">
          import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
@@ -108,13 +114,8 @@
          appId: "1:696702216457:web:54cf142e7a63fcecb88bd8"
          };
          
-         let db;
- 	 try {
-   	 const app = initializeApp(firebaseConfig);
-  	  db = getDatabase(app);
-		} catch (error) {
- 	   console.error("Chyba při inicializaci Firebase:", error);
-	}
+         const app = initializeApp(firebaseConfig);
+         const db = getDatabase(app);
          
          let scanning = false;
          let videoStream = null;
@@ -157,23 +158,34 @@
          
            const deviceRef = ref(db, 'devices/' + id);
          
-         get(deviceRef).then((snapshot) => {
-         if (snapshot.exists()) {
-         if (confirm(`Opravdu chcete smazat zařízení s ID: ${id}?`)) {
-           remove(deviceRef).then(() => {
-         console.log("Zařízení bylo úspěšně smazáno.");
-           renderDevices(); // Aktualizace seznamu
-         }).catch((error) => {
-         console.error("Chyba při mazání zařízení:", error);
-         });
-         }
-         } else {
-           alert("Zařízení s tímto ID neexistuje.");
-         }
-         }).catch((error) => {
-         console.error("Chyba při načítání zařízení:", error);
-         });
-         };
+             get(deviceRef).then((snapshot) => {
+                     if (snapshot.exists()) {
+                         let newName = prompt("Zadejte nový název zařízení:");
+                         if (newName) {
+                             set(deviceRef, {
+                                 name: newName,
+                                 status: "Dostupné",
+                                 loanedBy: "",
+                                 loanedTo: "",
+                                 loanDate: "",
+                                 company: "",
+                                 phone: ""
+                             }).then(() => {
+                                 console.log("Zařízení bylo úspěšně aktualizováno.");
+                                 renderDevices(); // Aktualizace seznamu
+                             }).catch((error) => {
+                                 console.error("Chyba při aktualizaci zařízení:", error);
+                             });
+                         } else {
+                             alert("Název zařízení nesmí být prázdný.");
+                         }
+                     } else {
+                         alert("Zařízení s tímto ID neexistuje.");
+                     }
+                 }).catch((error) => {
+                     console.error("Chyba při načítání zařízení:", error);
+                 });
+             };
          
          
          
@@ -398,63 +410,49 @@
              });
          };
          
-window.startScanner = function() {
-    if (scanning) return;
-    scanning = true;
-    document.getElementById("scannerStatus").innerText = "Spouštím skener...";
-
-    navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "environment" }, 
-        audio: false // Explicitně vypnout zvuk (Safari může vyžadovat oprávnění i pro mikrofon)
-    })
-    .then(stream => {
-        videoStream = stream;
-        let video = document.getElementById("video");
-        video.srcObject = stream;
-
-        // ✅ DŮLEŽITÉ PRO SAFARI (zabrání otevření videa na celou obrazovku)
-        video.setAttribute("playsinline", true);
-        video.setAttribute("autoplay", true);
-
-        let canvas = document.createElement("canvas");
-        let ctx = canvas.getContext("2d");
-        document.getElementById("scannerStatus").innerText = "Skenování...";
-
-        function scan() {
-            if (!scanning) return;
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                let code = jsQR(imageData.data, canvas.width, canvas.height);
-
-                if (code) {
-                    console.log("Nalezen QR kód:", code.data);
-                    document.getElementById("scannerStatus").innerText = "QR kód naskenován!";
-                    scanning = false;
-
-                    if (videoStream) {
-                        videoStream.getTracks().forEach(track => track.stop());
-                    }
-
-                    highlightDevice(code.data);
-                }
-            }
-
-            // Safari někdy špatně pracuje s `requestAnimationFrame`
-            setTimeout(scan, 200); // 200ms mezi skeny → stabilnější
-        }
-
-        scan();
-    })
-    .catch(err => {
-        document.getElementById("scannerStatus").innerText = "Nepodařilo se spustit kameru. Zkontrolujte oprávnění.";
-        console.error("Chyba při spuštění skeneru:", err);
-        scanning = false;
-    });
-};
-
+         window.startScanner = function() {
+         if (scanning) return;
+         scanning = true;
+         document.getElementById("scannerStatus").innerText = "Spouštím skener...";
+         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
+         videoStream = stream;
+         let video = document.getElementById("video");
+         video.srcObject = stream;
+         let canvas = document.createElement("canvas");
+         let ctx = canvas.getContext("2d");
+         document.getElementById("scannerStatus").innerText = "Skenování...";
+         
+         function scan() {
+         if (!scanning) return;
+         if (video.readyState === video.HAVE_ENOUGH_DATA) {
+         canvas.width = video.videoWidth;
+         canvas.height = video.videoHeight;
+         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+         let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+         let code = jsQR(imageData.data, canvas.width, canvas.height);
+         
+         if (code) {
+         console.log("Nalezen QR kód:", code.data);
+         document.getElementById("scannerStatus").innerText = "QR kód naskenován!";
+         scanning = false;
+         if (videoStream) {
+         videoStream.getTracks().forEach(track => track.stop());
+         }
+         
+         highlightDevice(code.data);
+         }
+         }
+         if (scanning) {
+         requestAnimationFrame(scan);
+         }
+         }
+         
+         scan();
+         }).catch(err => {
+         document.getElementById("scannerStatus").innerText = "Nepodařilo se spustit kameru. Zkontrolujte oprávnění.";
+         scanning = false;
+         });
+         };
          
          window.stopScanner = function() {
          scanning = false;
@@ -570,6 +568,23 @@ window.startScanner = function() {
          renderDevices();
          setTimeout(restoreScrollPosition, 100);
          };
+
+	document.addEventListener("DOMContentLoaded", function () {
+   	 let scrollTopBtn = document.getElementById("scrollTopBtn");
+
+  	  window.addEventListener("scroll", function () {
+  	      if (window.scrollY > 5000) {
+ 	           scrollTopBtn.style.display = "block";
+ 	       } else {
+ 	           scrollTopBtn.style.display = "none";
+ 	       }
+ 	   });
+
+ 	   scrollTopBtn.addEventListener("click", function () {
+   	     window.scrollTo({ top: 0, behavior: "smooth" });
+ 	   });
+	});
+
       </script>
    </body>
 </html>
