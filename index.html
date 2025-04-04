@@ -410,58 +410,107 @@
              });
          };
          
-         window.startScanner = function() {
-         if (scanning) return;
-         scanning = true;
-         document.getElementById("scannerStatus").innerText = "Spouštím skener...";
-         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
-         videoStream = stream;
-         let video = document.getElementById("video");
-         video.srcObject = stream;
-         let canvas = document.createElement("canvas");
-         let ctx = canvas.getContext("2d");
-         document.getElementById("scannerStatus").innerText = "Skenování...";
-         
-         function scan() {
-         if (!scanning) return;
-         if (video.readyState === video.HAVE_ENOUGH_DATA) {
-         canvas.width = video.videoWidth;
-         canvas.height = video.videoHeight;
-         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-         let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-         let code = jsQR(imageData.data, canvas.width, canvas.height);
-         
-         if (code) {
-         console.log("Nalezen QR kód:", code.data);
-         document.getElementById("scannerStatus").innerText = "QR kód naskenován!";
-         scanning = false;
-         if (videoStream) {
-         videoStream.getTracks().forEach(track => track.stop());
-         }
-         
-         highlightDevice(code.data);
-         }
-         }
-         if (scanning) {
-         requestAnimationFrame(scan);
-         }
-         }
-         
-         scan();
-         }).catch(err => {
-         document.getElementById("scannerStatus").innerText = "Nepodařilo se spustit kameru. Zkontrolujte oprávnění.";
-         scanning = false;
-         });
+         window.startScanner = function () {
+             if (scanning) return;
+             scanning = true;
+             document.getElementById("scannerStatus").innerText = "Spouštím skener...";
+
+             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                 .then(stream => {
+                     videoStream = stream;
+                     let video = document.getElementById("video");
+                     video.srcObject = stream;
+                     let canvas = document.createElement("canvas");
+                     let ctx = canvas.getContext("2d");
+                     document.getElementById("scannerStatus").innerText = "Skenování...";
+
+                     function scan() {
+                         if (!scanning) return;
+                         if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                             canvas.width = video.videoWidth;
+                             canvas.height = video.videoHeight;
+                             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                             let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                             let code = jsQR(imageData.data, canvas.width, canvas.height);
+
+                             if (code) {
+                                 console.log("Nalezen QR kód:", code.data);
+                                 document.getElementById("scannerStatus").innerText = "QR kód naskenován!";
+                                 scanning = false;
+                                 if (videoStream) {
+                                     videoStream.getTracks().forEach(track => track.stop());
+                                 }
+                                 highlightDevice(code.data);
+                                 return;
+                             }
+                         }
+                         if (scanning) {
+                             requestAnimationFrame(scan);
+                }
+                     }
+
+                     scan();
+                 })
+                 .catch(err => {
+                     console.warn("Kamera se nepodařila spustit, přepínám na čtečku.", err);
+                     document.getElementById("scannerStatus").innerText = "Použijte čtečku čárových kódů...";
+                     fallbackToKeyboardScanner();
+                 });
          };
-         
-         window.stopScanner = function() {
-         scanning = false;
-         if (videoStream) {
-         videoStream.getTracks().forEach(track => track.stop());
-         }
-         document.getElementById("scannerStatus").innerText = "Skener zastaven.";
-         renderDevices();
-         };
+
+	 window.stopScanner = function () {
+	     scanning = false;
+	     if (videoStream) {
+	         videoStream.getTracks().forEach(track => track.stop());
+	     }
+	     if (scannerListener) {
+	         window.removeEventListener("keydown", scannerListener);
+	         scannerListener = null;
+	     }
+	     document.getElementById("scannerStatus").innerText = "Skener zastaven.";
+	     renderDevices();
+	 };
+
+	let scannerBuffer = "";
+	let scannerListener;
+
+	function fallbackToKeyboardScanner() {
+  	  let input = document.getElementById("scannerInput");
+	    if (!input) {
+        	input = document.createElement("input");
+	        input.id = "scannerInput";
+        	input.type = "text";
+	        input.style.position = "absolute";
+        	input.style.opacity = "0";
+	        input.style.height = "1px";
+        	input.style.width = "1px";
+	        input.autocomplete = "off";
+        	document.body.appendChild(input);
+	    }
+
+	    input.value = "";
+	    input.focus();
+
+	    input.addEventListener("keydown", function onKeyDown(e) {
+        	if (e.key === "Enter") {
+	            const scannedCode = input.value.trim();
+
+        	    // 👇 Přidej debug a validaci
+	            console.log("Naskenováno z čtečky:", JSON.stringify(scannedCode));
+
+        	    // Volání stejně jako u mobilu
+	            document.getElementById("scannerStatus").innerText = "Kód naskenován!";
+        	    scanning = false;
+
+	            highlightDevice(scannedCode);  // stejné jako při skenu mobilem
+
+        	    input.value = "";
+	            input.blur();
+        	    input.removeEventListener("keydown", onKeyDown);
+	        }
+	    });
+	}
+
          
          window.ExportDevice = function() {
              const { jsPDF } = window.jspdf;
