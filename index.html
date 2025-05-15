@@ -19,7 +19,7 @@
          body { font-family: Calibri, sans-serif; display: flex; justify-content: center; }
          h1 {text-align: center;}
          @keyframes fadeOutHighlight { 0% { background-color: #89CFF0; } 100% { background-color: white; } }
-         .highlight { animation: fadeOutHighlight 5s forwards;}
+         .highlight { animation: fadeOutHighlight 10s forwards;}
          #deviceList {list-style-type: none; padding-left: 0; }
          #deviceList li {padding-left: 10px; }
          .device-id {font-size: 0.9em; color: #777; }
@@ -55,7 +55,9 @@
 	      
 	#scrollTopBtn {position: fixed; bottom: 20px;left: 20px;display:none; background-color: #ced4da; color: white; border: none; width: 30px; height: 30px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 50%; text-align: center; transition: all 0.3s ease-in-out; margin-left: 10px; display: flex; justify-content: center; align-items: flex-start; padding-top: 2px; }
 	#scrollTopBtn:hover {background-color: #0056b3;}
-
+	mark {background-color: yellow;}
+        mark.current {background-color: orange;}
+   	#searchModal {position: fixed; top: 20px; right: 20px; background: white; border: 1px solid #ccc; padding: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.2); z-index: 1000;}
 	      
 </style>
    </head>
@@ -69,6 +71,7 @@
          <video id="video" width="300" height="300" autoplay></video>
          <p id="scannerStatus"></p>
          <h2 style="display: inline-block;">Seznam zařízení</h2> <br>
+	 <button onclick="FindText()" class="manage-device">🔍</button>
          <button onclick="showAddDeviceDialog()" class="manage-device">+</button>
          <button onclick="showDeleteDeviceDialog()" class="manage-device">-</button>
          <button onclick="ExportDevice()" class="manage-device">QR</button>
@@ -76,6 +79,13 @@
          <ul id="deviceList"></ul>
       </div>
 
+	<div id="searchModal" style="display:none;">
+  		<input type="text" id="searchTerm" placeholder="Zadej hledaný text">
+  		<button onclick="nextMatch()">Další</button>
+  		<button onclick="closeSearch()">Zavřít</button>
+	</div>
+	   
+	   
       <div id="loanModal" style="display:none;">
         <div class="modal-content">
           <h2>Formulář pro půjčení zařízení</h2>
@@ -250,7 +260,7 @@
          if (deviceElement) {
          deviceElement.classList.add("highlight");
          deviceElement.scrollIntoView({ behavior: "smooth", block: "center" });
-          setTimeout(() => { deviceElement.classList.remove("highlight"); }, 5000);
+          setTimeout(() => { deviceElement.classList.remove("highlight"); }, 15000);
          }
          }
          
@@ -634,6 +644,108 @@
  	   });
 	});
 
+         window.matches = [];
+         window.currentIndex = -1;
+         window.lastSearchTerm = "";
+
+         window.FindText = function () {
+           document.getElementById('searchModal').style.display = 'block';
+           document.getElementById('searchTerm').focus();
+         };
+
+         window.closeSearch = function () {
+           document.getElementById('searchModal').style.display = 'none';
+           clearSearchMarks();
+           window.matches = [];
+           window.currentIndex = -1;
+           window.lastSearchTerm = "";
+         };
+
+         // Odstraní všechny <mark> tagy (zvýraznění)
+         function clearSearchMarks() {
+           const marks = document.querySelectorAll('mark');
+           marks.forEach(mark => {
+             const text = document.createTextNode(mark.textContent);
+             mark.replaceWith(text);
+           });
+         }
+
+         // Získá všechny textové uzly kromě modal okna
+         function getTextNodes(node) {
+           let nodes = [];
+           if (node.nodeType === Node.TEXT_NODE) {
+             nodes.push(node);
+           } else {
+             for (let child of node.childNodes) {
+               if (!(child.id && child.id === "searchModal")) {
+                 nodes = nodes.concat(getTextNodes(child));
+               }
+             }
+           }
+           return nodes;
+         }
+
+         // Provede zvýraznění výskytů
+         function markSearchMatches(term) {
+           clearSearchMarks();
+           window.matches = [];
+
+           const nodes = getTextNodes(document.body);
+           const regex = new RegExp(term, 'gi');
+
+           nodes.forEach(node => {
+             const parent = node.parentNode;
+             const text = node.textContent;
+             let match;
+             let lastIndex = 0;
+             regex.lastIndex = 0;
+
+             if (!regex.test(text)) return;
+
+             regex.lastIndex = 0;
+             const frag = document.createDocumentFragment();
+
+             while ((match = regex.exec(text)) !== null) {
+               if (match.index > lastIndex) {
+                 frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+               }
+               const mark = document.createElement('mark');
+               mark.textContent = match[0];
+               frag.appendChild(mark);
+               window.matches.push(mark);
+               lastIndex = match.index + match[0].length;
+             }
+
+             if (lastIndex < text.length) {
+               frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+             }
+
+             parent.replaceChild(frag, node);
+           });
+
+           window.currentIndex = -1;
+         }
+
+         // Posun na další výskyt
+         window.nextMatch = function () {
+           const term = document.getElementById('searchTerm').value.trim();
+           if (!term) return;
+
+           if (term !== window.lastSearchTerm) {
+             markSearchMatches(term);
+             window.lastSearchTerm = term;
+           }
+
+           if (window.matches.length === 0) return;
+
+           window.matches.forEach(m => m.classList.remove('current'));
+           window.currentIndex = (window.currentIndex + 1) % window.matches.length;
+           const current = window.matches[window.currentIndex];
+           current.classList.add('current');
+           current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         };
+
+	
       </script>
    </body>
 </html>
