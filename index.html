@@ -465,14 +465,23 @@ button.return:hover {
 
          
          function highlightDevice(deviceId) {
-         removeHighlight();
-         const deviceElement = document.querySelector(`[data-device-id="${deviceId}"]`);
-         if (deviceElement) {
-         deviceElement.classList.add("highlight");
-         deviceElement.scrollIntoView({ behavior: "smooth", block: "center" });
-          setTimeout(() => { deviceElement.classList.remove("highlight"); }, 15000);
-         }
-         }
+    removeHighlight();
+    const deviceElement = document.querySelector(`[data-device-id="${deviceId}"]`);
+    if (deviceElement) {
+        // Najdi .device-container uvnitř li
+        const container = deviceElement.querySelector('.device-container');
+        if (container) {
+            container.classList.add("highlight");
+            container.scrollIntoView({ behavior: "smooth", block: "center" });
+            setTimeout(() => { container.classList.remove("highlight"); }, 1500);
+        } else {
+            // fallback, kdyby nebyl .device-container
+            deviceElement.classList.add("highlight");
+            deviceElement.scrollIntoView({ behavior: "smooth", block: "center" });
+            setTimeout(() => { deviceElement.classList.remove("highlight"); }, 1500);
+        }
+    }
+}
          
          function removeHighlight() {
          document.querySelectorAll(".highlight").forEach(el => {
@@ -564,7 +573,17 @@ button.return:hover {
                 });
                 renderDevices();
                 restoreScrollPosition();
-                setTimeout(() => highlightDevice(id), 50);
+                setTimeout(() => {
+                  highlightDevice(id);
+                  const deviceElement = document.querySelector(`[data-device-id="${id}"]`);
+                  if (deviceElement) {
+                    const container = deviceElement.querySelector('.device-container');
+                    if (container) {
+                      container.classList.add('highlight');
+                      setTimeout(() => container.classList.remove('highlight'), 3000);
+                    }
+                  }
+                }, 300); // <-- zvýšeno z 50 na 300 ms
                 closeLoanModal();
               }).catch((error) => {
                 console.error("Chyba při půjčování zařízení:", error);
@@ -576,63 +595,70 @@ button.return:hover {
         }
          
          window.returnDevice = function(id) {
-             saveScrollPosition();
-             const deviceRef = ref(db, 'devices/' + id);
-             get(deviceRef).then((snapshot) => {
-                 if (snapshot.exists()) {
-                     const deviceData = snapshot.val();
-                     update(deviceRef, {
-                         name: deviceData.name,
-                         status: "Dostupné",
-                         loanedBy: "",  
-                         loanedTo: "",  
-                         loanDate: "",  
-                         company: "",   
-                         phone: "",
-                         note: "" // <-- SMAŽE POZNÁMKU PŘI VRÁCENÍ
-                     }).then(() => {
-                         console.log("Zařízení bylo vráceno");
-			// Nalezení odpovídajícího záznamu v 'loanHistory' pro vrácení zařízení
-			        const loanHistoryRef = ref(db, 'loanHistory/');
-        
-        			// Získání všech záznamů z loanHistory a hledání odpovídajícího záznamu
-			        get(loanHistoryRef).then((snapshot) => {
-			          if (snapshot.exists()) {
-			            const historyData = snapshot.val();
+    saveScrollPosition();
+    const deviceRef = ref(db, 'devices/' + id);
+    get(deviceRef).then((snapshot) => {
+        if (snapshot.exists()) {
+            const deviceData = snapshot.val();
+            update(deviceRef, {
+                name: deviceData.name,
+                status: "Dostupné",
+                loanedBy: "",  
+                loanedTo: "",  
+                loanDate: "",  
+                company: "",   
+                phone: "",
+                note: "" // <-- SMAŽE POZNÁMKU PŘI VRÁCENÍ
+            }).then(() => {
+                console.log("Zařízení bylo vráceno");
+                // Nalezení odpovídajícího záznamu v 'loanHistory' pro vrácení zařízení
+                const loanHistoryRef = ref(db, 'loanHistory/');
+                // Získání všech záznamů z loanHistory a hledání odpovídajícího záznamu
+                get(loanHistoryRef).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const historyData = snapshot.val();
+                        // Hledání odpovídajícího záznamu, který má odpovídající zařízení
+                        for (const key in historyData) {
+                            if (historyData[key].name === deviceData.name && historyData[key].loanedTo === deviceData.loanedTo) {
+                                // Přidání data vrácení do příslušného záznamu
+                                const loanEntryRef = ref(db, 'loanHistory/' + key);
+                                const returnDate = new Date().toLocaleDateString("cs-CZ");
+                                update(loanEntryRef, {
+                                    returnDate
+                                }).then(() => {
+                                    console.log("Datum vrácení bylo přidáno do historie");
+                                }).catch((error) => {
+                                    console.error("Chyba při aktualizaci historie půjček:", error);
+                                });
+                                break; // Přerušení smyčky po nalezení odpovídajícího záznamu
+                            }
+                        }
+                    }
+                }).catch((error) => {
+                    console.error("Chyba při získávání historie půjček:", error);
+                });
 
-			            // Hledání odpovídajícího záznamu, který má odpovídající zařízení
-			            for (const key in historyData) {
-			              if (historyData[key].name === deviceData.name && historyData[key].loanedTo === deviceData.loanedTo) {
-			                // Přidání data vrácení do příslušného záznamu
-			                const loanEntryRef = ref(db, 'loanHistory/' + key);
-			                const returnDate = new Date().toLocaleDateString("cs-CZ");
-
-			                update(loanEntryRef, {
-			                  returnDate
-			                }).then(() => {
-			                  console.log("Datum vrácení bylo přidáno do historie");
-			                }).catch((error) => {
-			                  console.error("Chyba při aktualizaci historie půjček:", error);
-			                });
-			                break; // Přerušení smyčky po nalezení odpovídajícího záznamu
-			              }
-			            }
-			          }
-			        }).catch((error) => {
-			          console.error("Chyba při získávání historie půjček:", error);
-			        });
-			     
-                         renderDevices();
-                         restoreScrollPosition();
-                         setTimeout(() => highlightDevice(id), 50);
-                     }).catch((error) => {
-                         console.error("Chyba při vrácení zařízení:", error);
-                     });
-                 }
-             }).catch((error) => {
-                 console.error("Chyba při načítání zařízení:", error);
-             });
-         };
+                renderDevices();
+                restoreScrollPosition();
+                setTimeout(() => {
+                    highlightDevice(id);
+                    const deviceElement = document.querySelector(`[data-device-id="${id}"]`);
+                    if (deviceElement) {
+                        const container = deviceElement.querySelector('.device-container');
+                        if (container) {
+                            container.classList.add('highlight');
+                            setTimeout(() => container.classList.remove('highlight'), 3000);
+                        }
+                    }
+                }, 300);
+            }).catch((error) => {
+                console.error("Chyba při vrácení zařízení:", error);
+            });
+        }
+    }).catch((error) => {
+        console.error("Chyba při načítání zařízení:", error);
+    });
+};
          
          window.startScanner = function () {
              if (scanning) return;
@@ -666,11 +692,12 @@ button.return:hover {
                                  if (videoStream) {
                                      videoStream.getTracks().forEach(track => track.stop());
                                  }
-                                 // Skryje video po naskenování
                                  let video = document.getElementById("video");
-                                  video.classList.remove("active");
-                                  video.srcObject = null;
-                                 highlightDevice(code.data);
+                                 video.classList.remove("active");
+                                 video.srcObject = null;
+                                 // Nejprve načti zařízení a pak zvýrazni
+                                 renderDevices();
+                                 setTimeout(() => highlightDevice(code.data), 100);
                                  return;
                              }
                          }
