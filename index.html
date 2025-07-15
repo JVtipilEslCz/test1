@@ -16,21 +16,78 @@
 
 	   
       <style> 
-         body { font-family: Calibri, sans-serif; display: flex; justify-content: center; }
+         body {
+  font-family: Calibri, sans-serif;
+  display: flex;
+  justify-content: center;
+  /* Jemné šedobílé diagonální čáry na pozadí */
+  background-color: #f6f7fa;
+  background-image: repeating-linear-gradient(
+    135deg,
+    #e9ecef 0px,
+    #e9ecef 2px,
+    transparent 2px,
+    transparent 24px
+  );
+}
          h1 {text-align: center;}
          @keyframes fadeOutHighlight { 0% { background-color: #89CFF0; } 100% { background-color: white; } }
          .highlight { animation: fadeOutHighlight 10s forwards;}
          #deviceList {list-style-type: none; padding-left: 0; }
          #deviceList li {padding-left: 10px; }
          .device-id {font-size: 0.9em; color: #777; }
+         button, .scan-button, .manage-device {
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+}
+button.loan:hover, .scan-button:hover {
+  background: #218838;
+}
+button.return:hover {
+  background: #c82333;
+}
+.manage-device:hover {
+  background: #adb5bd;
+}
          button {width: 100px; padding: 10px; margin: 5px; border: none; font-size: 16px; cursor: pointer; border-radius: 5px; }
          button.loan { background-color: #28a745; color: white; }
          button.return { background-color: #dc3545; color: white; }
          .container {max-width: 600px; width: 100%; padding: 20px; box-sizing: border-box;}
-         .device-container { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;}
+         .device-container { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 5px; 
+  margin-bottom: 10px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 16px;
+  margin-bottom: 18px;
+  transition: box-shadow 0.2s;
+}
+.device-container:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+}
          .device-header { display: flex; justify-content: space-between; font-weight: bold; width: 100%;}
          .device-name { font-weight: bold; text-align: left; flex: 1; }
-         .device-status { font-weight: bold; text-align: right; }
+         .device-status { 
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: 0.95em;
+  background: #e9ecef;
+  min-width: 80px;
+  display: inline-block;
+}
+.device-status.available {
+  background: #e6f9e7;
+  color: #218838;
+  border: 1px solid #b7e4c7;
+}
+.device-status.loaned {
+  background: #ffe6e6;
+  color: #c82333;
+  border: 1px solid #f5c2c7;
+}
          .device-details {display: flex; justify-content: space-between; width: 100%;}
          .device-details div {flex: 1;}
          .device-details span {white-space: nowrap;}
@@ -39,43 +96,97 @@
          .device-buttons button { width: 120px;}
          .device-status.available { color: green; }
          .device-status.loaned { color: red; }
-         .manage-device { background-color: #ced4da; color: white; border: none; width: 30px; height: 30px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 50%; text-align: center; transition: all 0.3s ease-in-out; margin-left: 10px; display: inline-flex; justify-content: center; align-items: center;}
-	 #video { width: 300px; height: 300px; object-fit: cover; border-radius: 10px;}
+         .manage-device { background-color: #ced4da; color: rgb(75, 75, 75); border: none; width: 30px; height: 30px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 50%; text-align: center; transition: all 0.3s ease-in-out; margin-left: 10px; display: inline-flex; justify-content: center; align-items: center;}
+	 #video {
+  width: 0;
+  height: 0;
+  opacity: 0;
+  transition: all 0.3s;
+  object-fit: cover;
+  border-radius: 10px;
+  margin: 0 auto 10px auto;
+  display: block;
+}
+#video.active {
+  width: 300px;
+  height: 300px;
+  opacity: 1;
+}
          .scan-buttons-container { display: flex; gap: 10px; justify-content: center;}
          .scan-button { background-color: #ced4da;color: black; border: none; font-size: 16px; cursor: pointer; border-radius: 5px; transition: all 0.3s ease-in-out; width: 150px; display: flex; align-items: center; justify-content: center; text-align: center; }
          
          #loanModal {position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center; z-index: 1000; overflow-y: auto; }
-         .modal-content { background: #f7f7f7; padding: 20px; border-radius: 5px; width: 90%; max-width: 350px; max-height: 90vh; overflow-y: auto; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);}
+         .modal-content { 
+  background: #fafdff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+  padding: 28px 20px;
+}
          .modal-content h2 { font-size: 1.5em; margin-bottom: 15px; text-align: center;}
          .modal-content label { font-weight: bold; margin-bottom: 5px; display: block;}
          .modal-content input { width: calc(100% - 20px); padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;}
          .modal-content button { padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%;}
-         .modal-content button[type="button"] { background-color: #dc3545; margin-top: 10px;}
+         .modal-content button[type="button"] { background: #adb5bd; margin-top: 10px;}
          body.modal-open { overflow: hidden;}
 	      
-	#scrollTopBtn {position: fixed; bottom: 20px;left: 20px;display:none; background-color: #ced4da; color: white; border: none; width: 30px; height: 30px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 50%; text-align: center; transition: all 0.3s ease-in-out; margin-left: 10px; display: flex; justify-content: center; align-items: flex-start; padding-top: 2px; }
+	#scrollTopBtn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  display: none;
+  background-color: #ced4da;
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 50%;
+  text-align: center;
+  transition: all 0.3s ease-in-out;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;           /* DŮLEŽITÉ: žádný padding */
+  line-height: 1;       /* DŮLEŽITÉ: žádné svislé posunutí */
+  box-sizing: border-box;
+}
 	#scrollTopBtn:hover {background-color: #0056b3;}
 	mark {background-color: yellow;}
         mark.current {background-color: orange;}
    	#searchModal {position: fixed; top: 20px; right: 20px; background: white; border: 1px solid #ccc; padding: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.2); z-index: 1000;}
 	      
-</style>
+	.modal-content input,
+	#searchModal input {
+  font-size: 16px;
+}
+	   
+      </style>
    </head>
    <body>
-      <div class="container">
+   <div class="container">
+      <!-- Přidáno logo -->
+      <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
+         <img src="logo.png" alt="Logo" style="max-width: 150px; width: 60vw; height: auto;">
+      </div>
+      <div class="header">
          <h1>Evidenční systém půjčovny</h1>
-         <div class="scan-buttons-container">
-            <button class="scan-button" onclick="startScanner()">Spustit skener</button>
-            <button class="scan-button" onclick="stopScanner()">Zastavit skener</button>
-         </div>
-         <video id="video" width="300" height="300" autoplay></video>
-         <p id="scannerStatus"></p>
-         <h2 style="display: inline-block;">Seznam zařízení</h2> <br>
+      </div>
+      
+      <div class="scan-buttons-container">
+         <button class="scan-button" onclick="startScanner()">Spustit skener</button>
+         <button class="scan-button" onclick="stopScanner()">Zastavit skener</button>
+      </div>
+      <video id="video" width="300" height="300" autoplay playsinline webkit-playsinline></video>
+      <p id="scannerStatus"></p>
+      <h2 style="display: inline-block;">Seznam zařízení</h2> <br>
 	 <button onclick="FindText()" class="manage-device">🔍</button>
-         <button onclick="showAddDeviceDialog()" class="manage-device">+</button>
-         <button onclick="showDeleteDeviceDialog()" class="manage-device">-</button>
-         <button onclick="ExportDevice()" class="manage-device">QR</button>
-	 <button onclick="ExportLoanHistory()" class="manage-device">E</button>
+<button onclick="showAddDeviceDialog()" class="manage-device">➕</button>
+<button onclick="showDeleteDeviceDialog()" class="manage-device">➖</button>
+<button onclick="ExportDevice()" class="manage-device">QR</button>
+<button onclick="ExportLoanHistory()" class="manage-device">📤</button>
+<button onclick="showHistoryModal()" class="manage-device">📜</button> <!-- Přidáno tlačítko historie -->
          <ul id="deviceList"></ul>
       </div>
 
@@ -102,11 +213,39 @@
             <label for="phone">Telefon:</label>
             <input type="text" id="phone" placeholder="Zadejte telefon zákazníka" required><br><br>
 
+            <label for="note">Poznámka:</label>
+            <input type="text" id="note" placeholder="Zadejte poznámku"><br><br>
+
             <button type="submit">Půjčit</button>
             <button type="button" id="cancelLoanButton">Zrušit</button>
           </form>
         </div>
       </div>
+
+      <div id="historyModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:center;">
+  <div style="background:#fff; border-radius:12px; max-width:95vw; max-height:90vh; overflow:auto; padding:24px 12px 12px 12px; position:relative;">
+    <button onclick="closeHistoryModal()" style="
+  position:absolute;
+  top:8px;
+  right:12px;
+  background:#adb5bd;
+  color:white;
+  border:none;
+  border-radius:50%;
+  width:32px;
+  height:32px;
+  font-size:20px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  line-height:1;
+">✖️</button>
+    <h2 style="margin-top:0;">Historie půjček</h2>
+    <div id="historyList"><em>Načítám...</em></div>
+  </div>
+</div>
 
 <button id="scrollTopBtn">↑</button>
 								
@@ -130,6 +269,73 @@
          let scanning = false;
          let videoStream = null;
          
+         // --- ZDE VLOŽ NOVÝ KÓD ---
+          window.showHistoryModal = function() {
+            document.getElementById("historyModal").style.display = "flex";
+            document.body.classList.add("modal-open");
+            renderHistory();
+          };
+
+          window.closeHistoryModal = function() {
+            document.getElementById("historyModal").style.display = "none";
+            document.body.classList.remove("modal-open");
+          };
+
+          function renderHistory() {
+            const historyDiv = document.getElementById("historyList");
+            historyDiv.innerHTML = "<em>Načítám historii...</em>";
+            const loanHistoryRef = ref(db, 'loanHistory/');
+            get(loanHistoryRef).then((snapshot) => {
+              if (snapshot.exists()) {
+                const historyData = snapshot.val();
+                // Seřadit podle data půjčení (poslední nahoře)
+                const entries = Object.values(historyData).sort((a, b) => {
+  // Převede datum ve formátu "DD.MM.RRRR" na číslo pro porovnání
+  const parseDate = (str) => {
+    if (!str) return 0;
+    const [d, m, y] = str.split(".");
+    return new Date(`${y}-${m}-${d}`).getTime();
+  };
+  return parseDate(b.loanDate) - parseDate(a.loanDate);
+});
+
+                let html = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.95em;">
+                  <tr style="background:#f0f4fa;">
+                    <th style="border:1px solid #ccc;padding:4px;">Zařízení</th>
+                    <th style="border:1px solid #ccc;padding:4px;">Půjčující</th>
+                    <th style="border:1px solid #ccc;padding:4px;">Zákazník</th>
+                    <th style="border:1px solid #ccc;padding:4px;">Půjčeno dne</th>
+                    <th style="border:1px solid #ccc;padding:4px;">Firma</th>
+                    <th style="border:1px solid #ccc;padding:4px;">Telefon</th>
+                    <th style="border:1px solid #ccc;padding:4px;">Poznámka</th>
+                    <th style="border:1px solid #ccc;padding:4px;">Vráceno dne</th>
+                  </tr>`;
+                for (const entry of entries) {
+                  html += `<tr>
+                    <td style="border:1px solid #ccc;padding:4px;">${entry.name || ""}</td>
+                    <td style="border:1px solid #ccc;padding:4px;">${entry.loanedBy || ""}</td>
+                    <td style="border:1px solid #ccc;padding:4px;">${entry.loanedTo || ""}</td>
+                    <td style="border:1px solid #ccc;padding:4px;">${entry.loanDate || ""}</td>
+                    <td style="border:1px solid #ccc;padding:4px;">${entry.company || ""}</td>
+                    <td style="border:1px solid #ccc;padding:4px;">${entry.phone || ""}</td>
+                    <td style="border:1px solid #ccc;padding:4px;">${entry.note || ""}</td>
+                    <td style="border:1px solid #ccc;padding:4px;">${entry.returnDate || ""}</td>
+                  </tr>`;
+                }
+                html += "</table></div>";
+                historyDiv.innerHTML = html;
+              } else {
+                historyDiv.innerHTML = "<em>Žádné záznamy v historii půjček.</em>";
+              }
+            }).catch((error) => {
+              historyDiv.innerHTML = "<em>Chyba při načítání historie.</em>";
+              console.error('Chyba při získávání historie půjček:', error);
+            });
+          }
+          // --- KONEC NOVÉHO KÓDU ---
+
+// ...následuje původní kód, např. renderDevices() atd.
+         
          window.showAddDeviceDialog = function() {
          const deviceName = prompt("Zadejte název zařízení:");
          if (deviceName) {
@@ -146,8 +352,9 @@
          loanedBy: "",
          loanedTo: "",
          loanDate: "",
-	 company: "",   
-         phone: ""  
+	       company: "",   
+         phone: "",
+         note: "" //POZNAMKA  
          }).then(() => {
          console.log("Zařízení bylo přidáno");
          renderDevices();
@@ -164,38 +371,40 @@
          };
          
          window.deleteDevice = function(id) {
-         if (!id) return;
-         
-           const deviceRef = ref(db, 'devices/' + id);
-         
-             get(deviceRef).then((snapshot) => {
-                     if (snapshot.exists()) {
-                         let newName = prompt("Zadejte nový název zařízení:");
-                         if (newName) {
-                             set(deviceRef, {
-                                 name: newName,
-                                 status: "Dostupné",
-                                 loanedBy: "",
-                                 loanedTo: "",
-                                 loanDate: "",
-                                 company: "",
-                                 phone: ""
-                             }).then(() => {
-                                 console.log("Zařízení bylo úspěšně aktualizováno.");
-                                 renderDevices(); // Aktualizace seznamu
-                             }).catch((error) => {
-                                 console.error("Chyba při aktualizaci zařízení:", error);
-                             });
-                         } else {
-                             alert("Název zařízení nesmí být prázdný.");
-                         }
-                     } else {
-                         alert("Zařízení s tímto ID neexistuje.");
-                     }
-                 }).catch((error) => {
-                     console.error("Chyba při načítání zařízení:", error);
-                 });
-             };
+    if (!id) return;
+
+    const deviceRef = ref(db, 'devices/' + id);
+
+    get(deviceRef).then((snapshot) => {
+        if (snapshot.exists()) {
+            let newName = prompt("Zadejte nový název zařízení:");
+            let newNote = prompt("Zadejte poznámku k zařízení:", snapshot.val().note || "");
+            if (newName) {
+                set(deviceRef, {
+                    name: newName,
+                    status: "Dostupné",
+                    loanedBy: "",
+                    loanedTo: "",
+                    loanDate: "",
+                    company: "",
+                    phone: "",
+                    note: newNote // <-- Přidáno pole Poznámka
+                }).then(() => {
+                    console.log("Zařízení bylo úspěšně aktualizováno.");
+                    renderDevices();
+                }).catch((error) => {
+                    console.error("Chyba při aktualizaci zařízení:", error);
+                });
+            } else {
+                alert("Název zařízení nesmí být prázdný.");
+            }
+        } else {
+            alert("Zařízení s tímto ID neexistuje.");
+        }
+    }).catch((error) => {
+        console.error("Chyba při načítání zařízení:", error);
+    });
+};
          
          
          
@@ -216,28 +425,29 @@
                          li.setAttribute("data-device-id", key);
 
                          li.innerHTML = `
-                             <div class="device-container">
-                                 <div class="device-header">
-                                     <span class="device-name">${device.name}</span>
-                                     <span class="device-status ${statusClass}">${statusText}</span>
-                                 </div>
-                                 <div class="device-details">
-                                     <div>
-                                         <span class="device-id">ID: ${key}</span><br>
-                                         Půjčující: ${device.loanedBy || "-"}<br>
-                                         Zákazník: ${device.loanedTo || "-"}<br>
-                                         Datum zápůjčky: ${device.loanDate || "-"}<br>
-                                         Firma: ${device.company || "-"}<br> 
-                                         Telefon: ${device.phone || "-"}<br>  
-                                     </div>
-                                     <div id="qrcode-${key}" class="qr-code" style="margin-left: 0;"></div>
-                                 </div>
-                                 <div class="device-buttons">
-                                     <button class="loan" onclick="loanDeviceButton('${key}')">Půjčit</button>
-                                     <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
-                                 </div>
-                             </div>
-                         `;
+    <div class="device-container">
+        <div class="device-header">
+            <span class="device-name">${device.name}</span>
+            <span class="device-status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="device-details">
+            <div>
+                <span class="device-id">ID: ${key}</span><br>
+                Půjčující: ${device.loanedBy || "-"}<br>
+                Zákazník: ${device.loanedTo || "-"}<br>
+                Datum zápůjčky: ${device.loanDate || "-"}<br>
+                Firma: ${device.company || "-"}<br> 
+                Telefon: ${device.phone || "-"}<br>
+                Poznámka: ${device.note || "-"}<br> <!-- Přidáno zobrazení poznámky -->
+            </div>
+            <div id="qrcode-${key}" class="qr-code" style="margin-left: 0;"></div>
+        </div>
+        <div class="device-buttons">
+            <button class="loan" onclick="loanDeviceButton('${key}')">Půjčit</button>
+            <button class="return" onclick="returnDevice('${key}')">Vrátit</button>
+        </div>
+    </div>
+`;
                          list.appendChild(li);
                          new QRCode(document.getElementById(`qrcode-${key}`), {
                              text: key,
@@ -296,14 +506,15 @@
           const form = document.getElementById("loanForm");
 
           form.onsubmit = function(event) {
-            event.preventDefault(); // Zabrání odeslání formuláře běžným způsobem
-            const loanedBy = document.getElementById("loanedBy").value;
-            const loanedTo = document.getElementById("loanedTo").value;
-            const company = document.getElementById("company").value;
-            const phone = document.getElementById("phone").value;
+  event.preventDefault();
+  const loanedBy = document.getElementById("loanedBy").value;
+  const loanedTo = document.getElementById("loanedTo").value;
+  const company = document.getElementById("company").value;
+  const phone = document.getElementById("phone").value;
+  const note = document.getElementById("note").value; // <-- přidáno
 
-            loanDevice(deviceId, loanedBy, loanedTo, company, phone); // Zavolání funkce pro půjčení zařízení s novými údaji
-          };
+  loanDevice(deviceId, loanedBy, loanedTo, company, phone, note); // předáno dál
+};
         }
 
 	
@@ -317,7 +528,7 @@
 			document.getElementById("loanModal").querySelector('button[type="button"]').addEventListener('click', closeLoanModal);
 
 // Funkce pro půjčení zařízení s novými údaji
-        function loanDevice(id, loanedBy, loanedTo, company, phone) {
+        function loanDevice(id, loanedBy, loanedTo, company, phone, note) {
           saveScrollPosition();
           const deviceRef = ref(db, 'devices/' + id);
           get(deviceRef).then((snapshot) => {
@@ -331,28 +542,30 @@
                 loanedTo,
                 loanDate,
                 company,
-                phone
+                phone,
+                note // <-- uloží poznámku
               }).then(() => {
                 console.log("Zařízení bylo půjčeno");
-		        const loanHistoryRef = ref(db, 'loanHistory/'); // Odkaz na loanHistory
-		        const newLoanRef = push(loanHistoryRef); // Vytvoření nového záznamu s unikátním ID
-		        set(newLoanRef, {
-		          name: deviceData.name,
-		          loanedBy,
-		          loanedTo,
-		          loanDate,
-		          company,
-		          phone,
-		          returnDate: "" // Na začátku nebude datum vrácení
-		        }).then(() => {
-		          console.log("Půjčení bylo zaznamenáno do historie");
-		        }).catch((error) => {
-		          console.error("Chyba při ukládání do historie půjček:", error);
-		        });
-		                      renderDevices();
+                const loanHistoryRef = ref(db, 'loanHistory/');
+                const newLoanRef = push(loanHistoryRef);
+                set(newLoanRef, {
+                  name: deviceData.name,
+                  loanedBy,
+                  loanedTo,
+                  loanDate,
+                  company,
+                  phone,
+                  note, // <-- uloží poznámku i do historie
+                  returnDate: ""
+                }).then(() => {
+                  console.log("Půjčení bylo zaznamenáno do historie");
+                }).catch((error) => {
+                  console.error("Chyba při ukládání do historie půjček:", error);
+                });
+                renderDevices();
                 restoreScrollPosition();
                 setTimeout(() => highlightDevice(id), 50);
-                closeLoanModal(); // Zavře modální okno po úspěšném půjčení
+                closeLoanModal();
               }).catch((error) => {
                 console.error("Chyba při půjčování zařízení:", error);
               });
@@ -424,6 +637,8 @@
              if (scanning) return;
              scanning = true;
              document.getElementById("scannerStatus").innerText = "Spouštím skener...";
+             let video = document.getElementById("video");
+             video.classList.add("active");
 
              navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
                  .then(stream => {
@@ -450,6 +665,10 @@
                                  if (videoStream) {
                                      videoStream.getTracks().forEach(track => track.stop());
                                  }
+                                 // Skryje video po naskenování
+                                 let video = document.getElementById("video");
+                                  video.classList.remove("active");
+                                  video.srcObject = null;
                                  highlightDevice(code.data);
                                  return;
                              }
@@ -478,6 +697,14 @@
 	         scannerListener = null;
 	     }
 	     document.getElementById("scannerStatus").innerText = "Skener zastaven.";
+
+	     // OPRAVA: Skryj a vyprázdni video
+	     let video = document.getElementById("video");
+	     video.classList.remove("active");
+	     video.srcObject = null;
+	     video.removeAttribute("src"); // pro jistotu na některých prohlížečích
+	     video.load();
+
 	     renderDevices();
 	 };
 
@@ -590,7 +817,7 @@
              get(loanHistoryRef).then((snapshot) => {
                  if (snapshot.exists()) {
                      const historyData = snapshot.val();
-                     let csvContent = "Zařízení;Půjčující;Zákazník;Půjčeno dne;Firma;Telefon;Vráceno dne\n";
+                     let csvContent = "Zařízení;Půjčující;Zákazník;Půjčeno dne;Firma;Telefon;Poznámka;Vráceno dne\n";
                      for (const key in historyData) {
                          const entry = historyData[key];
                          const name = entry.name || '';
@@ -599,8 +826,9 @@
                          const loanDate = entry.loanDate || '';
                          const company = entry.company || '';
                          const phone = entry.phone ? `'${entry.phone}` : '';
+                         const note = entry.note || '';
                          const returnDate = entry.returnDate || '';
-                         csvContent += `"${name}";"${loanedBy}";"${loanedTo}";"${loanDate}";"${company}";"${phone}";"${returnDate}"\n`;
+                         csvContent += `"${name}";"${loanedBy}";"${loanedTo}";"${loanDate}";"${company}";"${phone}";"${note}";"${returnDate}"\n`;
                      }
                      const BOM = "\uFEFF";  
                      const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
