@@ -542,7 +542,7 @@
                      const qrSize = 25, spacing = 10;
                      const pageWidth = doc.internal.pageSize.width;
                      const pageHeight = doc.internal.pageSize.height;
-                     let counter = 1; // Pořadové číslo začínáme na 1
+                     let counter = 0; // Pořadové číslo začínáme na 0
 
                      qrDataArray.forEach(({ key, imgData }) => {
                          doc.setFontSize(7);  // Nastaví velikost písma na 8 bodů
