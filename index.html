@@ -378,7 +378,7 @@ button.return:hover {
     get(deviceRef).then((snapshot) => {
         if (snapshot.exists()) {
             let newName = prompt("Zadejte nový název zařízení:");
-            let newNote = prompt("Zadejte poznámku k zařízení:", snapshot.val().note || "");
+            //let newNote = prompt("Zadejte poznámku k zařízení:", snapshot.val().note || "");
             if (newName) {
                 set(deviceRef, {
                     name: newName,
@@ -388,7 +388,7 @@ button.return:hover {
                     loanDate: "",
                     company: "",
                     phone: "",
-                    note: newNote // <-- Přidáno pole Poznámka
+                    note: "" // <-- Přidáno pole Poznámka
                 }).then(() => {
                     console.log("Zařízení bylo úspěšně aktualizováno.");
                     renderDevices();
@@ -588,7 +588,8 @@ button.return:hover {
                          loanedTo: "",  
                          loanDate: "",  
                          company: "",   
-                         phone: ""   
+                         phone: "",
+                         note: "" // <-- SMAŽE POZNÁMKU PŘI VRÁCENÍ
                      }).then(() => {
                          console.log("Zařízení bylo vráceno");
 			// Nalezení odpovídajícího záznamu v 'loanHistory' pro vrácení zařízení
@@ -971,8 +972,22 @@ button.return:hover {
            const current = window.matches[window.currentIndex];
            current.classList.add('current');
            current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-         };
 
+           // --- Přidá zvýraznění containeru na chvíli ---
+  let container = current.closest('.device-container');
+  if (container) {
+    container.classList.add('highlight');
+    setTimeout(() => container.classList.remove('highlight'), 1500);
+  }
+};
+
+// Přidá možnost potvrdit hledání klávesou Enter
+document.getElementById('searchTerm').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    window.nextMatch();
+  }
+});
 	
       </script>
    </body>
